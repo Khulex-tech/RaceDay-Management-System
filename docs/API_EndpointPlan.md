@@ -49,3 +49,11 @@
 | GET | `/api/users/{id}` | Returns a limited public view of a user (name, city, role). Used by Organisers when reviewing enrolments for their events. | Organiser | None | `200 OK` — `{ userId, fullName, city, role }`. `401 Unauthorized`. `403 Forbidden` — caller is not an Organiser. `404 Not Found` — user does not exist. |
 
 ---
+## 4. Events
+
+| HTTP Method | Route | Description | Role Required | Request Body | Expected Response |
+| --- | --- | --- | --- | --- | --- |
+| GET | `/api/events` | Returns all events with optional filtering and paging, so Participants can browse upcoming races on the Part 3 home page. | None | None — query string: `?eventType=Run&province=Gauteng&fromDate=&toDate=&search=&page=1&pageSize=10` | `200 OK` — `{ page, pageSize, totalCount, items: [ { eventId, name, eventDate, location, province, distanceKm, eventType, entryFee, bannerImageUrl, enrolmentCount } ] }`. `400 Bad Request` — invalid filter or paging values. |
+| GET | `/api/events/{id}` | Returns full detail for a single event, including its organiser and available categories, for the event detail page. | None | None | `200 OK` — `{ eventId, name, description, eventDate, location, province, distanceKm, eventType, entryFee, maxParticipants, bannerImageUrl, organiser: { userId, fullName }, categories: [ ... ] }`. `404 Not Found` — event does not exist. |
+| GET | `/api/events/upcoming` | Returns only events with a date in the future, ordered by soonest first. Exists to keep the Participant home page query simple and fast. | None | None — query string: `?take=10` | `200 OK` — list of upcoming event summaries. |
+| GET | `/api/events/my-events` | Returns the events created by the logged-in Organiser with enrolment counts, powering the Organiser dashboard. | Organiser | None | `200 OK` — `[ { eventId, name, eventDate, distanceKm, enrolmentCount } ]`. `401 Unauthorized`. `403 Forbidden` — caller is a Participant. |
