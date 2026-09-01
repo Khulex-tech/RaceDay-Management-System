@@ -36,3 +36,16 @@
 | POST | `/api/auth/login` | Authenticates a user against the stored password hash and creates the server-side session holding `UserId` and `Role`. Exists as the single entry point to an authenticated state. | None | `{ "email", "password" }` | `200 OK` — `{ userId, fullName, role }` plus session cookie. `400 Bad Request` — missing fields. `401 Unauthorized` — invalid credentials. `403 Forbidden` — account deactivated. |
 | POST | `/api/auth/logout` | Clears the server-side session so the user is no longer authenticated. Exists to support the logout action in the Part 3 MVC front end. | Any | None | `200 OK` — `{ message: "Session ended." }`. `401 Unauthorized` — no active session. |
 | GET | `/api/auth/me` | Returns the identity and role held in the current session. Used by the MVC layer to build role-aware navigation without re-reading the database. | Any | None | `200 OK` — `{ userId, fullName, email, role }`. `401 Unauthorized` — no active session. |
+---
+
+## 3. User Profile
+
+| HTTP Method | Route | Description | Role Required | Request Body | Expected Response |
+| --- | --- | --- | --- | --- | --- |
+| GET | `/api/users/profile` | Returns the full profile of the logged-in user, resolved from the session rather than a URL id so one user can never read another's profile. | Any | None | `200 OK` — `{ userId, firstName, lastName, email, phoneNumber, dateOfBirth, city, profilePictureUrl, role, createdAt }`. `401 Unauthorized` — no active session. |
+| PUT | `/api/users/profile` | Updates the logged-in user's own personal details. Email and role changes are validated; the password is not changed here. | Any | `{ "firstName", "lastName", "phoneNumber", "dateOfBirth", "city" }` | `200 OK` — updated profile. `400 Bad Request` — validation failed. `401 Unauthorized` — no active session. |
+| PUT | `/api/users/profile/password` | Changes the logged-in user's password after verifying the current one, then hashes and stores the new one. | Any | `{ "currentPassword", "newPassword", "confirmNewPassword" }` | `200 OK` — `{ message: "Password updated." }`. `400 Bad Request` — new passwords do not match or fail policy. `401 Unauthorized` — current password incorrect or no session. |
+| POST | `/api/users/profile/picture` | Uploads the user's profile picture, stores it in Azure Blob Storage and saves the returned URL. Planned here so Part 3 file handling goes through the API only. | Any | `multipart/form-data` — `file` (jpg/png, max 5 MB) | `200 OK` — `{ profilePictureUrl }`. `400 Bad Request` — unsupported type or file too large. `401 Unauthorized` — no active session. |
+| GET | `/api/users/{id}` | Returns a limited public view of a user (name, city, role). Used by Organisers when reviewing enrolments for their events. | Organiser | None | `200 OK` — `{ userId, fullName, city, role }`. `401 Unauthorized`. `403 Forbidden` — caller is not an Organiser. `404 Not Found` — user does not exist. |
+
+---
