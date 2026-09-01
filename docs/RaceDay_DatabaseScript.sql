@@ -1,5 +1,5 @@
 -- RaceDay Database Script
--- This script creates the RaceDay database, all eight tables and the sample data
+-- This script creates the RaceDay database, all six tables and the sample data
 
 -- Creating the database
 USE master;
