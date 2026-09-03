@@ -64,3 +64,14 @@
 | GET | `/api/event-types` | Returns the fixed list of event types (Run, Walk, Cycle) for dropdowns, so the front end never hard-codes them. | None | None | `200 OK` — `[ { eventTypeId, typeName } ]`. |
 
 ---
+## 5. Categories
+
+| HTTP Method | Route | Description | Role Required | Request Body | Expected Response |
+| --- | --- | --- | --- | --- | --- |
+| GET | `/api/events/{eventId}/categories` | Returns all age and distance categories defined for an event, so a Participant can pick one when entering. | None | None | `200 OK` — `[ { categoryId, categoryName, categoryType, minAge, maxAge, distanceKm, capacity, enrolledCount } ]`. `404 Not Found` — event does not exist. |
+| GET | `/api/categories/{id}` | Returns a single category with its parent event reference. Used when confirming an enrolment selection. | None | None | `200 OK` — category detail. `404 Not Found`. |
+| POST | `/api/events/{eventId}/categories` | Adds an age or distance category (e.g. Under 20, Senior, 10km, 21km) to an event owned by the logged-in Organiser. | Organiser (owner) | `{ "categoryName", "categoryType", "minAge", "maxAge", "distanceKm", "capacity" }` | `201 Created` — created category. `400 Bad Request` — validation failed (`maxAge` < `minAge`, missing distance on a Distance category). `401 Unauthorized`. `403 Forbidden` — not the owner. `404 Not Found` — event does not exist. `409 Conflict` — category name already used on this event. |
+| PUT | `/api/categories/{id}` | Updates a category's name, bounds or capacity. Capacity cannot be lowered below the number already enrolled. | Organiser (owner) | `{ "categoryName", "categoryType", "minAge", "maxAge", "distanceKm", "capacity" }` | `200 OK` — updated category. `400 Bad Request`. `401 Unauthorized`. `403 Forbidden`. `404 Not Found`. `409 Conflict` — duplicate name or capacity below current enrolments. |
+| DELETE | `/api/categories/{id}` | Removes a category from an event. Blocked when Participants are already enrolled in it. | Organiser (owner) | None | `204 No Content`. `401 Unauthorized`. `403 Forbidden`. `404 Not Found`. `409 Conflict` — category has enrolments. |
+
+---
