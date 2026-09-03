@@ -100,3 +100,12 @@
 | GET | `/api/results/{id}` | Returns one result. Visible to the Participant it belongs to and to the Organiser of the parent event. | Any (owner or event Organiser) | None | `200 OK` — result detail. `401 Unauthorized`. `403 Forbidden`. `404 Not Found`. |
 
 ---
+## 8. Supporting endpoints
+
+| HTTP Method | Route | Description | Role Required | Request Body | Expected Response |
+| --- | --- | --- | --- | --- | --- |
+| GET | `/api/enrolment-statuses` | Returns the enrolment status list with colour codes, so the Part 3 badges are driven by data rather than hard-coded strings. | Any | None | `200 OK` — `[ { statusId, statusName, colourCode } ]`. `401 Unauthorized`. |
+| GET | `/api/dashboard/organiser` | Returns the Organiser dashboard totals: event count, total enrolments, enrolments per event and the next upcoming event date. Aggregated server-side to avoid multiple calls from the MVC layer. | Organiser | None | `200 OK` — `{ totalEvents, totalEnrolments, upcomingEvents: [ { eventId, name, eventDate, enrolmentCount } ] }`. `401 Unauthorized`. `403 Forbidden`. |
+| GET | `/api/health` | Returns API and database connectivity status. Used by the GitHub Actions workflow and the Docker health check in Part 3. | None | None | `200 OK` — `{ status: "Healthy", database: "Connected" }`. `503 Service Unavailable` — database unreachable. |
+
+---
