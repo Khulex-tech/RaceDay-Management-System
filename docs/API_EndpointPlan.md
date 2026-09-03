@@ -109,3 +109,17 @@
 | GET | `/api/health` | Returns API and database connectivity status. Used by the GitHub Actions workflow and the Docker health check in Part 3. | None | None | `200 OK` — `{ status: "Healthy", database: "Connected" }`. `503 Service Unavailable` — database unreachable. |
 
 ---
+## 9. Endpoint count summary
+
+| Resource group | Endpoints |
+| --- | --- |
+| Authentication | 4 |
+| User Profile | 5 |
+| Events | 9 |
+| Categories | 5 |
+| Event Enrolments | 7 |
+| Results | 6 |
+| Supporting | 3 |
+| **Total** | **39** |
+
+Every functional requirement listed in Part 2 of the brief is covered: registration and login by role, profile view and update for both roles, full event CRUD for Organisers with read access for both roles, category definition and viewing, Participant enrolment by category with Organiser visibility of enrolments, and Organiser result capture with Participant result viewing.
