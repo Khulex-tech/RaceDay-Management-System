@@ -86,3 +86,17 @@
 | PUT | `/api/enrolments/{id}/status` | Lets the event's Organiser confirm or reject an enrolment, driving the colour-coded status badges in Part 3. | Organiser (owner) | `{ "status" }` — `Pending`, `Confirmed` or `Cancelled` | `200 OK` — `{ enrolmentId, status }`. `400 Bad Request` — unknown status value. `401 Unauthorized`. `403 Forbidden` — not the event owner. `404 Not Found`. |
 | PUT | `/api/enrolments/{id}/category` | Lets a Participant change their selected category before the event date, without cancelling and re-entering. | Participant (owner) | `{ "categoryId" }` | `200 OK` — updated enrolment. `400 Bad Request` — category not on this event or age not eligible. `401 Unauthorized`. `403 Forbidden` — not the owner. `404 Not Found`. `409 Conflict` — event already took place or target category full. |
 | DELETE | `/api/enrolments/{id}` | Withdraws the logged-in Participant from an event before race day. | Participant (owner) | None | `204 No Content`. `401 Unauthorized`. `403 Forbidden` — not the owner. `404 Not Found`. `409 Conflict` — event already took place or a result is already captured. |
+---
+
+## 7. Results
+
+| HTTP Method | Route | Description | Role Required | Request Body | Expected Response |
+| --- | --- | --- | --- | --- | --- |
+| POST | `/api/enrolments/{enrolmentId}/result` | Captures a finish time and finishing position for one enrolled Participant after the event. Recorded against the enrolment so the event and category are implied. | Organiser (owner) | `{ "finishTime", "position", "totalFinishers" }` | `201 Created` — `{ resultId, enrolmentId, finishTime, position, totalFinishers }`. `400 Bad Request` — invalid time format, position ≤ 0, or position greater than `totalFinishers`. `401 Unauthorized`. `403 Forbidden` — not the event's Organiser. `404 Not Found` — enrolment does not exist. `409 Conflict` — result already captured, or the event date is in the future. |
+| PUT | `/api/results/{id}` | Corrects a previously captured result, for timing-mat disputes and manual recounts. | Organiser (owner) | `{ "finishTime", "position", "totalFinishers" }` | `200 OK` — updated result. `400 Bad Request`. `401 Unauthorized`. `403 Forbidden`. `404 Not Found`. |
+| DELETE | `/api/results/{id}` | Removes an incorrectly captured result so it can be recaptured. | Organiser (owner) | None | `204 No Content`. `401 Unauthorized`. `403 Forbidden`. `404 Not Found`. |
+| GET | `/api/events/{eventId}/results` | Returns the full result list for an event, ordered by position, for the event results page. | None | None — query string: `?categoryId=` | `200 OK` — `[ { position, participantName, categoryName, finishTime, totalFinishers } ]`. `404 Not Found` — event does not exist. |
+| GET | `/api/results/my-results` | Returns the logged-in Participant's own race history — event name, date, category, finish time and position out of total finishers — for the "My Results" page. | Participant | None | `200 OK` — `[ { resultId, eventName, eventDate, categoryName, finishTime, position, totalFinishers } ]`. `401 Unauthorized`. `403 Forbidden` — caller is an Organiser. |
+| GET | `/api/results/{id}` | Returns one result. Visible to the Participant it belongs to and to the Organiser of the parent event. | Any (owner or event Organiser) | None | `200 OK` — result detail. `401 Unauthorized`. `403 Forbidden`. `404 Not Found`. |
+
+---
