@@ -7,9 +7,9 @@
 
 ## 1. System description
 
-RaceDay is a web-based event management platform for the South African road running, walking and cycling community. South Africa hosts hundreds of road events every weekend - from the Comrades Marathon and the Cape Town Cycle Tour to community park runs and charity walks - yet many are still administered with paper entry forms, spreadsheets and scattered WhatsApp groups.
+RaceDay is a web-based event management platform for the South African road running, walking and cycling community. South Africa hosts hundreds of road events every weekend — from the Comrades Marathon and the Cape Town Cycle Tour to community park runs and charity walks — yet many are still administered with paper entry forms, spreadsheets and scattered WhatsApp groups.
 
-This Part 1 submission covers the planned data model, API surface and database script that Parts 2 and 3 will implement against.
+This Part 1 submission plans the full data model, API surface and SQL Server schema before any Part 2 API code is written.
 
 ---
 
@@ -17,148 +17,176 @@ This Part 1 submission covers the planned data model, API surface and database s
 
 | Role | What the role can do |
 | --- | --- |
-| **Organiser** | Register and log in as an Organiser. Create, edit and delete their own events, capturing name, description, date, location, distance and event type (Run, Walk or Cycle). Define categories per event with name, description, entry fee and age range. View every enrolment for their own events, including the Participant's selected category and enrolment status. Confirm or cancel enrolments. Capture finish times and finishing positions after the event. Upload an event banner image (Part 3). |
-| **Participant** | Register and log in as a Participant. Browse and filter upcoming events and view full event detail with the available categories. Enter an event by selecting a category, which records the Participant–event–category link immediately. View all of their own enrolments and each enrolment's status. Withdraw from an event or change category before race day. View their personal race history — event, date, category, finish time and finishing position. View and update their own profile and upload a profile picture (Part 3). |
+| **Organiser** | Register and log in. Create, edit and delete their own events (name, description, date, location, distance, event type). Define categories per event (name, description, entry fee, age range). View enrolments for their events, confirm or cancel enrolments, and capture finish times and finishing positions. Upload an event banner (Part 3). |
+| **Participant** | Register and log in. Browse and view events with categories. Enter an event by selecting a category. View and update their own enrolments (withdraw or change category before race day). View personal race history (finish time and finishing position). Update their profile and upload a profile picture (Part 3). |
 
-Both roles are stored as a `Role` column on a single `Users` table (`Organiser` or `Participant`), so registration and login work the same way for each. From Part 2 onward, the session stores the user's `UserId` and `Role`, every protected endpoint checks the role, and ownership is checked on top of the role — an Organiser can only manage events they created, and a Participant can only see their own enrolments and results. Part 3 reflects the same separation in the MVC interface with a different navigation menu per role.
-
----
-
-## 3. Database model (six tables)
-
-| Table | Purpose |
-| --- | --- |
-| `Users` | Organisers and Participants (role stored as a column) |
-| `EventTypes` | Fixed types: Run, Walk, Cycle |
-| `Events` | Events created by Organisers |
-| `Categories` | Age-bounded entry options per event, including entry fee |
-| `Enrolments` | Participant–event–category link with status (`Pending`, `Confirmed`, `Cancelled`) |
-| `Results` | Optional 1:1 finish time and finishing position per enrolment |
+Both roles live in one `Users` table as a `Role` column (`Organiser` or `Participant`). From Part 2 onward, the session stores `UserId` and `Role`; protected endpoints check role and ownership (Organiser → own events only; Participant → own enrolments/results only).
 
 ---
 
-## 4. Repository structure
+## 3. Repository structure (`/docs` deliverables)
 
 ```
 .
 ├── docs/
-│   ├── RACEDAYERD.png                Entity Relationship Diagram (Section A)
-│   ├── API_EndpointPlan.md           API endpoint plan (Section B)
-│   └── RaceDay_DatabaseScript.sql    Schema + sample data script (Section C)
+│   ├── RACEDAYERD.png                Section A — ERD (PNG)
+│   ├── API_EndpointPlan.md           Section B — API endpoint plan (Markdown)
+│   └── RaceDay_DatabaseScript.sql    Section C — SQL Server schema + seed data
 ├── LICENSE
 └── README.md
 ```
 
-| Deliverable | File |
-| --- | --- |
-| Section A – ERD | [`docs/RACEDAYERD.png`](docs/RACEDAYERD.png) |
-| Section B – API endpoint plan | [`docs/API_EndpointPlan.md`](docs/API_EndpointPlan.md) |
-| Section C – Database script | [`docs/RaceDay_DatabaseScript.sql`](docs/RaceDay_DatabaseScript.sql) |
-
----
-
-## 5. How to run the database script
-
-1. Open `docs/RaceDay_DatabaseScript.sql` in SQL Server Management Studio (or Azure Data Studio).
-2. Connect to a local SQL Server instance.
-3. Execute the full script.
-
-The script drops and recreates `RaceDayDb`, creates all six tables, and seeds sample organisers, participants, events, categories, enrolments and results.
-
----
-
-## 6. Next steps
-
-| Part | Focus |
-| --- | --- |
-| **Part 2** | ASP.NET Core Web API implementing the endpoints in `API_EndpointPlan.md` against `RaceDayDb` |
-| **Part 3** | MVC front end, file uploads (profile picture and event banner), and Docker packaging |
-
-
----
-## 7. Part 1 deliverables
-
-### Section A - Entity Relationship Diagram
-
-`docs/ERD.png`
-
-The data model has **eight tables**, above the minimum of six. Every table shows its attributes, data types, primary key, foreign keys and constraints, and every relationship shows crow's foot cardinality.
-
-| Table | Purpose |
-| --- | --- |
-| `Role` | Lookup table for the two roles: Organiser and Participant. |
-| `Users` | All users of both roles, with a hashed password, contact details and date of birth. |
-| `EventType` | Lookup table for Run, Walk and Cycle. |
-| `Event` | An event created by one Organiser, with name, description, date, location, distance and type. |
-| `EventCategory` | The age or distance categories defined for a specific event. |
-| `EnrolmentStatus` | Lookup table for Pending, Confirmed and Cancelled, each with a colour code for the Part 3 badges. |
-| `Enrolment` | The link recording which Participant entered which Event in which Category. |
-| `Result` | The finish time and finishing position captured for a single enrolment. |
-
-**Relationships and cardinality**
-
-| Relationship | Cardinality | Reasoning |
+| Brief section | Requirement | File in this repo |
 | --- | --- | --- |
-| `Role` → `Users` | One-to-many | Each user has exactly one role; each role is held by many users. |
-| `Users` (Organiser) → `Event` | One-to-many | An Organiser creates many events; each event has one owning Organiser. |
-| `EventType` → `Event` | One-to-many | Each event is one of Run, Walk or Cycle. |
-| `Event` → `EventCategory` | One-to-many (cascade delete) | Categories belong to one event and are deleted with it. |
-| `Event` → `Enrolment` | One-to-many | An event receives many enrolments. |
-| `Users` (Participant) → `Enrolment` | One-to-many | A Participant enters many events over time. |
-| `EventCategory` → `Enrolment` | One-to-many | Many Participants enter under the same category. |
-| `EnrolmentStatus` → `Enrolment` | One-to-many | Each enrolment has exactly one status. |
-| `Enrolment` → `Result` | One-to-one (optional, cascade delete) | An enrolment has at most one result, captured after the event. |
+| **Section A** | ERD as PNG or PDF in `/docs` | [`docs/RACEDAYERD.png`](docs/RACEDAYERD.png) |
+| **Section B** | Endpoint plan as PDF or Markdown in `/docs` | [`docs/API_EndpointPlan.md`](docs/API_EndpointPlan.md) |
+| **Section C** | `.sql` script in `/docs` | [`docs/RaceDay_DatabaseScript.sql`](docs/RaceDay_DatabaseScript.sql) |
 
-**Two design decisions worth noting**
-
-1. **`Users` and `Event` form a many-to-many relationship that is resolved by `Enrolment`.** A Participant enters many events and an event has many Participants, so the two cannot be linked directly. `Enrolment` is the junction table, and because it also stores the selected `CategoryId`, the status and the race number, it holds the extra detail the brief asks for instead of being a plain link table.
-
-2. **`Result` is linked to `Enrolment`, not to `Users`.** This makes it impossible to record a result for someone who never entered the event, and the event and category are already known through the enrolment. The `UNIQUE` constraint on `EnrolmentId` enforces the one-to-one.
 ---
-### Section C — SQL database script
 
-`docs/RaceDay-Database-Script.sql`
+## 4. Section A — Entity Relationship Diagram (ERD)
 
-One script that creates and populates the database in SSMS. It drops `RaceDayDb` first, so it can be run again on a clean instance without errors.
+**Deliverable:** [`docs/RACEDAYERD.png`](docs/RACEDAYERD.png)
 
-- `CREATE TABLE` for all eight tables in the ERD, with every primary key, foreign key, `NOT NULL`, `UNIQUE`, `DEFAULT` and `CHECK` constraint written into the script.
-- Rules enforced by the database instead of application code: a Participant cannot enter the same event twice (`UNIQUE (EventId, ParticipantId)`), a category name cannot repeat within an event, an event distance and entry fee cannot be negative, `MaxAge` cannot be lower than `MinAge`, and a finishing position cannot be greater than the total number of finishers.
-- Sample data above the required minimum: **2 Organisers, 4 Participants, 3 Events** (Soweto Marathon, Cape Town Cycle Tour and Durban Beachfront Charity Walk — one of each event type), **10 categories** across those events, **8 enrolments** covering all three statuses, and **3 results** with finish times and positions.
-- Three SELECT statements at the end that check the row count per table, list the enrolments per event and show the captured results.
+### Brief requirements checklist
 
-**Running the script**
+| Requirement | How this submission meets it |
+| --- | --- |
+| Full RaceDay data model with a **minimum of six entities** | **Six entities:** `Users`, `EventTypes`, `Events`, `Categories`, `Enrolments`, `Results` |
+| Show attributes, **primary keys**, **foreign keys**, and **cardinality** | Each entity lists attributes and types; PKs and FKs are labelled; crow's-foot notation shows one-to-many and the resolved many-to-many |
+| Submit as **PNG or PDF** inside `/docs` | Submitted as PNG: `docs/RACEDAYERD.png` |
+| SQL script in Section C must **match the ERD exactly** | See Section C and the alignment note below — **no deliberate differences** |
 
-1. Open `docs/RaceDay-Database-Script.sql` in SQL Server Management Studio.
-2. Connect to your SQL Server instance and execute the script (F5).
-3. The SELECT statements at the end confirm the tables and sample data loaded correctly.
+### Entities
+
+| Entity | Purpose | Key attributes |
+| --- | --- | --- |
+| `Users` | Organisers and Participants | PK `UserId`; `Email` UNIQUE; `Role`; `PasswordHash`; optional `PhoneNumber`, `ProfilePictureUrl` |
+| `EventTypes` | Run / Walk / Cycle | PK `EventTypeId`; `Name` UNIQUE |
+| `Events` | Events owned by an Organiser | PK `EventId`; FK `OrganiserId` → `Users`; FK `EventTypeId` → `EventTypes` |
+| `Categories` | Entry options for an event | PK `CategoryId`; FK `EventId` → `Events`; `EntryFee`, `MinAge`, `MaxAge` |
+| `Enrolments` | Participant enters an event in a category | PK `EnrolmentId`; FKs `ParticipantId`, `EventId`, `CategoryId`; `EnrolmentStatus` |
+| `Results` | Optional result for one enrolment | PK `ResultId`; FK `EnrolmentId` UNIQUE → `Enrolments` (enforces 1:1) |
+
+### Relationships and cardinality
+
+| Relationship | Cardinality | Notes |
+| --- | --- | --- |
+| `Users` (as Organiser) → `Events` | **One-to-many** | One Organiser organises many events |
+| `EventTypes` → `Events` | **One-to-many** | One type has many events |
+| `Events` → `Categories` | **One-to-many** | One event has many categories |
+| `Users` (as Participant) ↔ `Events` | **Many-to-many** (via `Enrolments`) | Resolved by the `Enrolments` junction entity |
+| `Categories` → `Enrolments` | **One-to-many** | One category is chosen by many enrolments |
+| `Enrolments` → `Results` | **One-to-one** (optional) | An enrolment may have one result |
+
+**Design notes**
+
+1. **Many-to-many via `Enrolments`:** Participants and events cannot be linked directly. `Enrolments` stores `CategoryId` and `EnrolmentStatus` as well as the two FKs.
+2. **`Results` hangs off `Enrolments`:** A result cannot exist without an enrolment; `UNIQUE(EnrolmentId)` enforces at most one result per enrolment.
+
+---
+
+## 5. Section B — API Endpoint Plan
+
+**Deliverable:** [`docs/API_EndpointPlan.md`](docs/API_EndpointPlan.md)
+
+### Brief requirements checklist
+
+| Requirement | How this submission meets it |
+| --- | --- |
+| Table completed **before** Part 2 code | Plan is the Part 2 build contract; no API project code is in this repo yet |
+| Columns: **HTTP Method, Route, Description, Role Required, Request Body, Expected Response** | Every row in `API_EndpointPlan.md` uses those six columns |
+| Cover **Authentication** (register & login), **User Profile**, **Events**, **Categories**, **Event Enrolments**, **Results** | Sections 2–7 of the plan cover each required group (plus supporting endpoints) |
+| Submit as **PDF or Markdown** in `/docs` | Submitted as Markdown: `docs/API_EndpointPlan.md` |
+| Part 2 API must closely match this plan | Document purpose states Part 2 will be built against this plan |
+
+### Resource groups planned
+
+| Resource group | Covered in plan | Examples |
+| --- | --- | --- |
+| Authentication | Yes | `POST /api/auth/register`, `POST /api/auth/login` (+ logout / me) |
+| User Profile | Yes | `GET/PUT /api/users/profile`, password change, profile picture |
+| Events | Yes | List, detail, create, update, delete, banner upload, event types |
+| Categories | Yes | Nested under events + category CRUD |
+| Event Enrolments | Yes | Enter event, my enrolments, status/category updates, withdraw |
+| Results | Yes | Capture, update, delete, event results, my results |
+
+Role values used in the plan match the brief style: **None** (public), **Any** (logged in), or a specific role (**Organiser** / **Participant**). Routes are under `/api/`.
+
+---
+
+## 6. Section C — SQL Database Script
+
+**Deliverable:** [`docs/RaceDay_DatabaseScript.sql`](docs/RaceDay_DatabaseScript.sql)
+
+### Brief requirements checklist
+
+| Requirement | How this submission meets it |
+| --- | --- |
+| `CREATE TABLE` for **every entity in the ERD** | Creates all six tables: `Users`, `EventTypes`, `Events`, `Categories`, `Enrolments`, `Results` |
+| **Primary keys, foreign keys**, and constraints (`NOT NULL`, `UNIQUE`, `DEFAULT`) | Defined on every table (plus `CHECK` constraints for role, status, distance, ages, position) |
+| Seed data: **≥ 2 Organisers**, **≥ 2 Participants**, **≥ 3 Events**, categories per event, sample enrolments | **2 Organisers, 4 Participants, 3 Events, 10 categories, 8 enrolments, 3 results** |
+| Saved as `.sql` in `/docs` | `docs/RaceDay_DatabaseScript.sql` |
+| Runs without errors on a **clean SQL Server** instance | Script drops/recreates `RaceDayDb`, then creates schema and seeds data |
+
+### Sample data summary
+
+| Seed item | Count | Detail |
+| --- | --- | --- |
+| Organisers | 2 | Thabo Mokoena, Ayesha Patel |
+| Participants | 4 | Sipho, Lerato, Johan, Nomvula |
+| Events | 3 | Soweto Marathon (Run), Cape Town Cycle Tour (Cycle), Durban Beachfront Charity Walk (Walk) |
+| Categories | 10 | Multiple categories on each event |
+| Enrolments | 8 | Statuses include Pending, Confirmed and Cancelled |
+| Results | 3 | Finish times and finishing positions for the completed marathon |
+
+### How to run (SSMS)
+
+1. Open `docs/RaceDay_DatabaseScript.sql` in SQL Server Management Studio.
+2. Connect to a clean SQL Server instance.
+3. Execute the full script (F5).
+4. Review the verification `SELECT` statements at the end (row counts, enrolments, results).
 
 Or from the command line:
 
 ```bash
-sqlcmd -S "(localdb)\MSSQLLocalDB" -i "docs/RaceDay-Database-Script.sql"
+sqlcmd -S "(localdb)\MSSQLLocalDB" -i "docs/RaceDay_DatabaseScript.sql"
 ```
 
-### ERD and script alignment
+---
 
-The SQL script matches the ERD exactly — the same eight tables, the same attribute names and data types, and the same keys, constraints and cardinality. There are no deliberate differences to explain.
+## 7. ERD and SQL alignment (Section A ↔ Section C)
+
+Per the brief: *“Your SQL script in Section C must match your ERD exactly. Any deliberate differences must be explained in the README.”*
+
+**There are no deliberate differences.** The script matches `RACEDAYERD.png` for:
+
+- the same six entity names;
+- the same attributes and data types;
+- the same primary keys and foreign keys;
+- the same cardinalities (including the optional 1:1 `Enrolments` ↔ `Results` via `UNIQUE EnrolmentId`).
 
 ---
-## 8. GitHub and CI/CD
 
-The workflow at `.github/workflows/part1-validation.yml` runs on every push and pull request and checks that the repository is structured the way the brief requires. It fails the build if any of the following is untrue:
+## 8. Next steps
 
-- the `docs/` folder exists;
-- `docs/` contains an ERD image (`.png` or `.pdf`), an endpoint plan document and a `.sql` script;
-- the SQL script contains `CREATE TABLE` statements for all eight tables, plus `PRIMARY KEY`, `FOREIGN KEY` and `INSERT` statements;
-- the endpoint plan covers every required resource group (auth, profile, events, categories, enrolments, results);
-- the README exists and describes both roles.
-
-It then starts a SQL Server 2022 service container and runs the SQL script against it, so a green build proves the script works on a fresh instance and not only on my own machine.
-
-**CI/CD green build screenshot**
-
-![CI green build](docs/ci-green-build.png)
-
-**Commit history:** a minimum of 20 meaningful commits for this part, each one a separate piece of work on the ERD, endpoint plan, SQL script, CI workflow or documentation.
+| Part | Focus |
+| --- | --- |
+| **Part 2** | ASP.NET Core Web API implementing `API_EndpointPlan.md` against `RaceDayDb` |
+| **Part 3** | MVC front end, file uploads (profile picture and event banner), and Docker packaging |
 
 ---
+
+## 9. Video presentation
+
+**YouTube (unlisted):** _<add your unlisted YouTube link here>_
+
+The video walks through the ERD (entities, keys, cardinality), the endpoint plan (routes, roles, responses), and a live run of the SQL script in SSMS ending with the check queries.
+
+---
+
+## 10. Author
+
+**Name:** Thapelo Mkhari (Khulex-tech)  
+**Module:** PROG6212 - Programming 2B  
+**Part:** 1 of 3 - System Planning and Database
