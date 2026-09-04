@@ -73,3 +73,44 @@ The script drops and recreates `RaceDayDb`, creates all six tables, and seeds sa
 | --- | --- |
 | **Part 2** | ASP.NET Core Web API implementing the endpoints in `API_EndpointPlan.md` against `RaceDayDb` |
 | **Part 3** | MVC front end, file uploads (profile picture and event banner), and Docker packaging |
+
+
+---
+## 7. Part 1 deliverables
+
+### Section A — Entity Relationship Diagram
+
+`docs/ERD.png` (source: `docs/ERD.dot`)
+
+The data model has **eight tables**, above the minimum of six. Every table shows its attributes, data types, primary key, foreign keys and constraints, and every relationship shows crow's foot cardinality.
+
+| Table | Purpose |
+| --- | --- |
+| `Role` | Lookup table for the two roles: Organiser and Participant. |
+| `Users` | All users of both roles, with a hashed password, contact details and date of birth. |
+| `EventType` | Lookup table for Run, Walk and Cycle. |
+| `Event` | An event created by one Organiser, with name, description, date, location, distance and type. |
+| `EventCategory` | The age or distance categories defined for a specific event. |
+| `EnrolmentStatus` | Lookup table for Pending, Confirmed and Cancelled, each with a colour code for the Part 3 badges. |
+| `Enrolment` | The link recording which Participant entered which Event in which Category. |
+| `Result` | The finish time and finishing position captured for a single enrolment. |
+
+**Relationships and cardinality**
+
+| Relationship | Cardinality | Reasoning |
+| --- | --- | --- |
+| `Role` → `Users` | One-to-many | Each user has exactly one role; each role is held by many users. |
+| `Users` (Organiser) → `Event` | One-to-many | An Organiser creates many events; each event has one owning Organiser. |
+| `EventType` → `Event` | One-to-many | Each event is one of Run, Walk or Cycle. |
+| `Event` → `EventCategory` | One-to-many (cascade delete) | Categories belong to one event and are deleted with it. |
+| `Event` → `Enrolment` | One-to-many | An event receives many enrolments. |
+| `Users` (Participant) → `Enrolment` | One-to-many | A Participant enters many events over time. |
+| `EventCategory` → `Enrolment` | One-to-many | Many Participants enter under the same category. |
+| `EnrolmentStatus` → `Enrolment` | One-to-many | Each enrolment has exactly one status. |
+| `Enrolment` → `Result` | One-to-one (optional, cascade delete) | An enrolment has at most one result, captured after the event. |
+
+**Two design decisions worth noting**
+
+1. **`Users` and `Event` form a many-to-many relationship that is resolved by `Enrolment`.** A Participant enters many events and an event has many Participants, so the two cannot be linked directly. `Enrolment` is the junction table, and because it also stores the selected `CategoryId`, the status and the race number, it holds the extra detail the brief asks for instead of being a plain link table.
+
+2. **`Result` is linked to `Enrolment`, not to `Users`.** This makes it impossible to record a result for someone who never entered the event, and the event and category are already known through the enrolment. The `UNIQUE` constraint on `EnrolmentId` enforces the one-to-one.
