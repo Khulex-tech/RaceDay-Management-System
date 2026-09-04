@@ -181,7 +181,7 @@ GitHub Actions runs [`.github/workflows/part1.yml`](.github/workflows/part1.yml)
 - the SQL script creates all six ERD tables and includes primary keys, foreign keys, constraints and seed `INSERT`s;
 - the README documents the Project Overview, System Roles and CI/CD.
 
-A green Part 1 build means the repository structure and deliverables match what this workflow expects.
+<img src="docs/SUCCESSFUL-CI.png"/>
 
 ---
 
