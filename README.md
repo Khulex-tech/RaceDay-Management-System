@@ -143,3 +143,22 @@ sqlcmd -S "(localdb)\MSSQLLocalDB" -i "docs/RaceDay-Database-Script.sql"
 The SQL script matches the ERD exactly — the same eight tables, the same attribute names and data types, and the same keys, constraints and cardinality. There are no deliberate differences to explain.
 
 ---
+## 8. GitHub and CI/CD
+
+The workflow at `.github/workflows/part1-validation.yml` runs on every push and pull request and checks that the repository is structured the way the brief requires. It fails the build if any of the following is untrue:
+
+- the `docs/` folder exists;
+- `docs/` contains an ERD image (`.png` or `.pdf`), an endpoint plan document and a `.sql` script;
+- the SQL script contains `CREATE TABLE` statements for all eight tables, plus `PRIMARY KEY`, `FOREIGN KEY` and `INSERT` statements;
+- the endpoint plan covers every required resource group (auth, profile, events, categories, enrolments, results);
+- the README exists and describes both roles.
+
+It then starts a SQL Server 2022 service container and runs the SQL script against it, so a green build proves the script works on a fresh instance and not only on my own machine.
+
+**CI/CD green build screenshot**
+
+![CI green build](docs/ci-green-build.png)
+
+**Commit history:** a minimum of 20 meaningful commits for this part, each one a separate piece of work on the ERD, endpoint plan, SQL script, CI workflow or documentation.
+
+---
