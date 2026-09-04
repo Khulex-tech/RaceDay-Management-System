@@ -1,15 +1,24 @@
 # RaceDay - Event Management System for South African Road Events
 
 **Module:** PROG6212 - Programming 2B  
-**Portfolio of Evidence - Part 1: System Planning and Database**
+**Portfolio of Evidence - Part 1: System Planning and Database**  
+**Repository:** RaceDay-Management-System
 
 ---
 
 ## 1. Project Overview
 
-RaceDay is a web-based event management platform for the South African road running, walking and cycling community. South Africa hosts hundreds of road events every weekend — from the Comrades Marathon and the Cape Town Cycle Tour to community park runs and charity walks — yet many are still administered with paper entry forms, spreadsheets and scattered WhatsApp groups.
+RaceDay is a web-based event management platform for South African road running, walking and cycling events. A lot of local races are still run with paper forms, spreadsheets and WhatsApp groups, so this project plans a proper system for organisers and participants.
 
-This Part 1 submission plans the full data model, API surface and SQL Server schema before any Part 2 API code is written.
+Part 1 is planning and database work only. It covers:
+
+- the system roles and how the app should work
+- the Entity Relationship Diagram (ERD)
+- the API endpoint plan for Part 2
+- the SQL Server database script
+- GitHub Actions checks for the Part 1 deliverables
+
+No ASP.NET Core API or MVC front end has been built yet. That comes in Parts 2 and 3.
 
 ---
 
@@ -20,7 +29,7 @@ This Part 1 submission plans the full data model, API surface and SQL Server sch
 | **Organiser** | Register and log in. Create, edit and delete their own events (name, description, date, location, distance, event type). Define categories per event (name, description, entry fee, age range). View enrolments for their events, confirm or cancel enrolments, and capture finish times and finishing positions. Upload an event banner (Part 3). |
 | **Participant** | Register and log in. Browse and view events with categories. Enter an event by selecting a category. View and update their own enrolments (withdraw or change category before race day). View personal race history (finish time and finishing position). Update their profile and upload a profile picture (Part 3). |
 
-Both roles live in one `Users` table as a `Role` column (`Organiser` or `Participant`). From Part 2 onward, the session stores `UserId` and `Role`; protected endpoints check role and ownership (Organiser → own events only; Participant → own enrolments/results only).
+Both roles are stored in one `Users` table using a `Role` column (`Organiser` or `Participant`). In Part 2 the session will store `UserId` and `Role`. Organisers may only manage events they created. Participants may only manage their own enrolments and results.
 
 ---
 
@@ -34,7 +43,8 @@ Both roles live in one `Users` table as a `Role` column (`Organiser` or `Partici
 ├── docs/
 │   ├── RACEDAYERD.png                Section A — ERD (PNG)
 │   ├── API_EndpointPlan.md           Section B — API endpoint plan (Markdown)
-│   └── RaceDay_DatabaseScript.sql    Section C — SQL Server schema + seed data
+│   ├── RaceDay_DatabaseScript.sql    Section C — SQL Server schema + seed data
+│   └── SUCCESSFUL-CI.png             Screenshot of a successful CI run
 ├── LICENSE
 └── README.md
 ```
@@ -49,7 +59,7 @@ Both roles live in one `Users` table as a `Role` column (`Organiser` or `Partici
 
 ## 4. Section A — Entity Relationship Diagram (ERD)
 
-**Deliverable:** [`docs/RACEDAYERD.png`](docs/RACEDAYERD.png)
+<img src="docs/RACEDAYERD.png">
 
 ### Brief requirements checklist
 
@@ -93,28 +103,32 @@ Both roles live in one `Users` table as a `Role` column (`Organiser` or `Partici
 
 **Deliverable:** [`docs/API_EndpointPlan.md`](docs/API_EndpointPlan.md)
 
+The endpoint plan was written before any Part 2 API code. It is the contract the ASP.NET Core Web API will follow later.
+
 ### Brief requirements checklist
 
 | Requirement | How this submission meets it |
 | --- | --- |
-| Table completed **before** Part 2 code | Plan is the Part 2 build contract; no API project code is in this repo yet |
-| Columns: **HTTP Method, Route, Description, Role Required, Request Body, Expected Response** | Every row in `API_EndpointPlan.md` uses those six columns |
-| Cover **Authentication** (register & login), **User Profile**, **Events**, **Categories**, **Event Enrolments**, **Results** | Sections 2–7 of the plan cover each required group (plus supporting endpoints) |
+| Table completed **before** Part 2 code | Plan is ready; no API project code is in this repo yet |
+| Columns: **HTTP Method, Route, Description, Role Required, Request Body, Expected Response** | Every endpoint row in `API_EndpointPlan.md` uses those six columns |
+| Cover **Authentication** (register & login), **User Profile**, **Events**, **Categories**, **Event Enrolments**, **Results** | These areas are covered in the plan (plus a few supporting endpoints) |
 | Submit as **PDF or Markdown** in `/docs` | Submitted as Markdown: `docs/API_EndpointPlan.md` |
-| Part 2 API must closely match this plan | Document purpose states Part 2 will be built against this plan |
+| Part 2 API must closely match this plan | Part 2 will be built against this document |
 
 ### Resource groups planned
 
-| Resource group | Covered in plan | Examples |
+| Resource group | Covered in plan | Examples from the plan |
 | --- | --- | --- |
-| Authentication | Yes | `POST /api/auth/register`, `POST /api/auth/login` (+ logout / me) |
+| Authentication | Yes | `POST /api/auth/register`, `POST /api/auth/login` |
 | User Profile | Yes | `GET/PUT /api/users/profile`, password change, profile picture |
 | Events | Yes | List, detail, create, update, delete, banner upload, event types |
-| Categories | Yes | Nested under events + category CRUD |
+| Categories | Yes | Categories nested under events, plus category CRUD |
 | Event Enrolments | Yes | Enter event, my enrolments, status/category updates, withdraw |
 | Results | Yes | Capture, update, delete, event results, my results |
 
-Role values used in the plan match the brief style: **None** (public), **Any** (logged in), or a specific role (**Organiser** / **Participant**). Routes are under `/api/`.
+Role values in the plan are **None** (public), **Any** (logged in), **Organiser** or **Participant**. Routes start with `/api/`.
+
+Full endpoint details are in [`docs/API_EndpointPlan.md`](docs/API_EndpointPlan.md).
 
 ---
 
@@ -122,33 +136,37 @@ Role values used in the plan match the brief style: **None** (public), **Any** (
 
 **Deliverable:** [`docs/RaceDay_DatabaseScript.sql`](docs/RaceDay_DatabaseScript.sql)
 
+The script creates the RaceDay database in SQL Server Management Studio. It drops and recreates `RaceDayDb`, so it can be run again on a clean instance.
+
 ### Brief requirements checklist
 
 | Requirement | How this submission meets it |
 | --- | --- |
 | `CREATE TABLE` for **every entity in the ERD** | Creates all six tables: `Users`, `EventTypes`, `Events`, `Categories`, `Enrolments`, `Results` |
-| **Primary keys, foreign keys**, and constraints (`NOT NULL`, `UNIQUE`, `DEFAULT`) | Defined on every table (plus `CHECK` constraints for role, status, distance, ages, position) |
-| Seed data: **≥ 2 Organisers**, **≥ 2 Participants**, **≥ 3 Events**, categories per event, sample enrolments | **2 Organisers, 4 Participants, 3 Events, 10 categories, 8 enrolments, 3 results** |
+| **Primary keys, foreign keys**, and constraints (`NOT NULL`, `UNIQUE`, `DEFAULT`) | Defined in the script (plus `CHECK` constraints where needed) |
+| Seed data: **≥ 2 Organisers**, **≥ 2 Participants**, **≥ 3 Events**, categories per event, sample enrolments | Seeded as shown below |
 | Saved as `.sql` in `/docs` | `docs/RaceDay_DatabaseScript.sql` |
 | Runs without errors on a **clean SQL Server** instance | Script drops/recreates `RaceDayDb`, then creates schema and seeds data |
 
-### Sample data summary
+### Sample data in the script
+
+These counts come from the `INSERT` statements in `RaceDay_DatabaseScript.sql`:
 
 | Seed item | Count | Detail |
 | --- | --- | --- |
 | Organisers | 2 | Thabo Mokoena, Ayesha Patel |
 | Participants | 4 | Sipho, Lerato, Johan, Nomvula |
 | Events | 3 | Soweto Marathon (Run), Cape Town Cycle Tour (Cycle), Durban Beachfront Charity Walk (Walk) |
-| Categories | 10 | Multiple categories on each event |
-| Enrolments | 8 | Statuses include Pending, Confirmed and Cancelled |
-| Results | 3 | Finish times and finishing positions for the completed marathon |
+| Categories | 10 | Categories across all three events |
+| Enrolments | 8 | Includes Pending, Confirmed and Cancelled |
+| Results | 3 | Finish times and finishing positions for completed enrolments |
 
 ### How to run (SSMS)
 
 1. Open `docs/RaceDay_DatabaseScript.sql` in SQL Server Management Studio.
 2. Connect to a clean SQL Server instance.
 3. Execute the full script (F5).
-4. Review the verification `SELECT` statements at the end (row counts, enrolments, results).
+4. Check the `SELECT` statements at the end (row counts, enrolments, results).
 
 Or from the command line:
 
@@ -160,32 +178,47 @@ sqlcmd -S "(localdb)\MSSQLLocalDB" -i "docs/RaceDay_DatabaseScript.sql"
 
 ## 7. ERD and SQL alignment (Section A ↔ Section C)
 
-Per the brief: *“Your SQL script in Section C must match your ERD exactly. Any deliberate differences must be explained in the README.”*
+The brief says the SQL script must match the ERD exactly, and any deliberate differences must be explained here.
 
-**There are no deliberate differences.** The script matches `RACEDAYERD.png` for:
+**There are no deliberate differences.** `RaceDay_DatabaseScript.sql` matches `docs/RACEDAYERD.png` for:
 
-- the same six entity names;
-- the same attributes and data types;
+- the same six entities;
+- the same attributes and data types used in the diagram;
 - the same primary keys and foreign keys;
-- the same cardinalities (including the optional 1:1 `Enrolments` ↔ `Results` via `UNIQUE EnrolmentId`).
+- the same relationships and cardinality (including the optional 1:1 between `Enrolments` and `Results` through `UNIQUE EnrolmentId`).
 
 ---
 
 ## 8. CI/CD
 
-GitHub Actions runs [`.github/workflows/part1.yml`](.github/workflows/part1.yml) on every push to `main`/`master` and on pull requests. The workflow checks that:
+GitHub Actions runs [`.github/workflows/part1.yml`](.github/workflows/part1.yml) on pushes to `main`/`master` and on pull requests.
+
+This workflow does **static / structural checks only**. It does **not** start a SQL Server container or execute the SQL script inside Actions.
+
+It checks that:
 
 - `docs/` and `.github/workflows/` exist;
-- the ERD PNG (`docs/RACEDAYERD.png`), endpoint plan (`docs/API_EndpointPlan.md`), SQL script (`docs/RaceDay_DatabaseScript.sql`) and `README.md` are present;
+- `README.md`, `docs/RACEDAYERD.png`, `docs/API_EndpointPlan.md` and `docs/RaceDay_DatabaseScript.sql` are present;
+- the ERD file is a non-empty PNG;
 - the endpoint plan includes the six required columns and covers Authentication, User Profile, Events, Categories, Enrolments and Results;
-- the SQL script creates all six ERD tables and includes primary keys, foreign keys, constraints and seed `INSERT`s;
-- the README documents the Project Overview, System Roles and CI/CD.
+- the SQL script contains `CREATE TABLE` for all six entities, plus `PRIMARY KEY`, `FOREIGN KEY`, `NOT NULL`, `UNIQUE`, `DEFAULT`, `CHECK` and seed `INSERT` statements;
+- the README includes Project Overview, System Roles and CI/CD.
+
+Screenshot of a successful Part 1 CI run:
 
 <img src="docs/SUCCESSFUL-CI.png"/>
 
 ---
 
-## 9. Next steps
+## 9. GitHub and version control
+
+This repository is hosted on GitHub as **RaceDay-Management-System**.
+
+Part 1 work is meant to show planning progress through normal commits (ERD, endpoint plan, SQL script, README and CI updates). The brief expects a meaningful commit history (20+ commits across the portfolio). Commits should describe real changes, not empty or junk messages.
+
+---
+
+## 10. Next steps
 
 | Part | Focus |
 | --- | --- |
@@ -194,7 +227,7 @@ GitHub Actions runs [`.github/workflows/part1.yml`](.github/workflows/part1.yml)
 
 ---
 
-## 10. Video presentation
+## 11. Video presentation
 
 **YouTube (unlisted):** _<add your unlisted YouTube link here>_
 
@@ -202,7 +235,7 @@ The video walks through the ERD (entities, keys, cardinality), the endpoint plan
 
 ---
 
-## 11. Author
+## 12. Author
 
 **Name:** Thapelo Mkhari (Khulex-tech)  
 **Module:** PROG6212 - Programming 2B  
