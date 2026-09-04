@@ -1,0 +1,95 @@
+name: Part 1
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+
+jobs:
+  validate-part1:
+    name: part 1
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check required folders
+        shell: bash
+        run: |
+          test -d docs
+          test -d .github/workflows
+
+      - name: Check required Part 1 files
+        shell: bash
+        run: |
+          test -f README.md
+          test -f docs/RACEDAYERD.png
+          test -f docs/API_EndpointPlan.md
+          test -f docs/RaceDay_DatabaseScript.sql
+
+      - name: Check ERD
+        shell: bash
+        run: |
+          test -s docs/RACEDAYERD.png
+          file docs/RACEDAYERD.png | grep -qi "PNG image"
+
+      - name: Check API endpoint plan
+        shell: bash
+        run: |
+          grep -q "HTTP Method" docs/API_EndpointPlan.md
+          grep -q "Route" docs/API_EndpointPlan.md
+          grep -q "Description" docs/API_EndpointPlan.md
+          grep -q "Role Required" docs/API_EndpointPlan.md
+          grep -q "Request Body" docs/API_EndpointPlan.md
+          grep -q "Expected Response" docs/API_EndpointPlan.md
+
+      - name: Check required API areas
+        shell: bash
+        run: |
+          grep -qi "Authentication" docs/API_EndpointPlan.md
+          grep -qi "User Profile" docs/API_EndpointPlan.md
+          grep -qi "Events" docs/API_EndpointPlan.md
+          grep -qi "Categories" docs/API_EndpointPlan.md
+          grep -qi "Enrolments" docs/API_EndpointPlan.md
+          grep -qi "Results" docs/API_EndpointPlan.md
+
+      - name: Check SQL tables
+        shell: bash
+        run: |
+          grep -qi "CREATE TABLE Users" docs/RaceDay_DatabaseScript.sql
+          grep -qi "CREATE TABLE EventTypes" docs/RaceDay_DatabaseScript.sql
+          grep -qi "CREATE TABLE Events" docs/RaceDay_DatabaseScript.sql
+          grep -qi "CREATE TABLE Categories" docs/RaceDay_DatabaseScript.sql
+          grep -qi "CREATE TABLE Enrolments" docs/RaceDay_DatabaseScript.sql
+          grep -qi "CREATE TABLE Results" docs/RaceDay_DatabaseScript.sql
+
+      - name: Check SQL constraints
+        shell: bash
+        run: |
+          grep -qi "PRIMARY KEY" docs/RaceDay_DatabaseScript.sql
+          grep -qi "FOREIGN KEY" docs/RaceDay_DatabaseScript.sql
+          grep -qi "NOT NULL" docs/RaceDay_DatabaseScript.sql
+          grep -qi "UNIQUE" docs/RaceDay_DatabaseScript.sql
+          grep -qi "DEFAULT" docs/RaceDay_DatabaseScript.sql
+          grep -qi "CHECK" docs/RaceDay_DatabaseScript.sql
+
+      - name: Check seed data
+        shell: bash
+        run: |
+          grep -qi "INSERT INTO Users" docs/RaceDay_DatabaseScript.sql
+          grep -qi "INSERT INTO Events" docs/RaceDay_DatabaseScript.sql
+          grep -qi "INSERT INTO Categories" docs/RaceDay_DatabaseScript.sql
+          grep -qi "INSERT INTO Enrolments" docs/RaceDay_DatabaseScript.sql
+
+      - name: Check README
+        shell: bash
+        run: |
+          grep -qi "Project Overview" README.md
+          grep -qi "System Roles" README.md
+          grep -qi "CI/CD" README.md
+
+      - name: Part 1 checks passed
+        run: echo "RaceDay Part 1 checks completed successfully."

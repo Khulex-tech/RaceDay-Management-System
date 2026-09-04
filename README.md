@@ -5,7 +5,7 @@
 
 ---
 
-## 1. System description
+## 1. Project Overview
 
 RaceDay is a web-based event management platform for the South African road running, walking and cycling community. South Africa hosts hundreds of road events every weekend — from the Comrades Marathon and the Cape Town Cycle Tour to community park runs and charity walks — yet many are still administered with paper entry forms, spreadsheets and scattered WhatsApp groups.
 
@@ -13,7 +13,7 @@ This Part 1 submission plans the full data model, API surface and SQL Server sch
 
 ---
 
-## 2. The two user roles
+## 2. System Roles
 
 | Role | What the role can do |
 | --- | --- |
@@ -28,6 +28,9 @@ Both roles live in one `Users` table as a `Role` column (`Organiser` or `Partici
 
 ```
 .
+├── .github/
+│   └── workflows/
+│       └── part1.yml                 CI workflow that validates Part 1 deliverables
 ├── docs/
 │   ├── RACEDAYERD.png                Section A — ERD (PNG)
 │   ├── API_EndpointPlan.md           Section B — API endpoint plan (Markdown)
@@ -168,7 +171,21 @@ Per the brief: *“Your SQL script in Section C must match your ERD exactly. Any
 
 ---
 
-## 8. Next steps
+## 8. CI/CD
+
+GitHub Actions runs [`.github/workflows/part1.yml`](.github/workflows/part1.yml) on every push to `main`/`master` and on pull requests. The workflow checks that:
+
+- `docs/` and `.github/workflows/` exist;
+- the ERD PNG (`docs/RACEDAYERD.png`), endpoint plan (`docs/API_EndpointPlan.md`), SQL script (`docs/RaceDay_DatabaseScript.sql`) and `README.md` are present;
+- the endpoint plan includes the six required columns and covers Authentication, User Profile, Events, Categories, Enrolments and Results;
+- the SQL script creates all six ERD tables and includes primary keys, foreign keys, constraints and seed `INSERT`s;
+- the README documents the Project Overview, System Roles and CI/CD.
+
+A green Part 1 build means the repository structure and deliverables match what this workflow expects.
+
+---
+
+## 9. Next steps
 
 | Part | Focus |
 | --- | --- |
@@ -177,7 +194,7 @@ Per the brief: *“Your SQL script in Section C must match your ERD exactly. Any
 
 ---
 
-## 9. Video presentation
+## 10. Video presentation
 
 **YouTube (unlisted):** _<add your unlisted YouTube link here>_
 
@@ -185,7 +202,7 @@ The video walks through the ERD (entities, keys, cardinality), the endpoint plan
 
 ---
 
-## 10. Author
+## 11. Author
 
 **Name:** Thapelo Mkhari (Khulex-tech)  
 **Module:** PROG6212 - Programming 2B  
