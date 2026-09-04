@@ -78,9 +78,9 @@ The script drops and recreates `RaceDayDb`, creates all six tables, and seeds sa
 ---
 ## 7. Part 1 deliverables
 
-### Section A — Entity Relationship Diagram
+### Section A - Entity Relationship Diagram
 
-`docs/ERD.png` (source: `docs/ERD.dot`)
+`docs/ERD.png`
 
 The data model has **eight tables**, above the minimum of six. Every table shows its attributes, data types, primary key, foreign keys and constraints, and every relationship shows crow's foot cardinality.
 
@@ -114,3 +114,32 @@ The data model has **eight tables**, above the minimum of six. Every table shows
 1. **`Users` and `Event` form a many-to-many relationship that is resolved by `Enrolment`.** A Participant enters many events and an event has many Participants, so the two cannot be linked directly. `Enrolment` is the junction table, and because it also stores the selected `CategoryId`, the status and the race number, it holds the extra detail the brief asks for instead of being a plain link table.
 
 2. **`Result` is linked to `Enrolment`, not to `Users`.** This makes it impossible to record a result for someone who never entered the event, and the event and category are already known through the enrolment. The `UNIQUE` constraint on `EnrolmentId` enforces the one-to-one.
+---
+### Section C — SQL database script
+
+`docs/RaceDay-Database-Script.sql`
+
+One script that creates and populates the database in SSMS. It drops `RaceDayDb` first, so it can be run again on a clean instance without errors.
+
+- `CREATE TABLE` for all eight tables in the ERD, with every primary key, foreign key, `NOT NULL`, `UNIQUE`, `DEFAULT` and `CHECK` constraint written into the script.
+- Rules enforced by the database instead of application code: a Participant cannot enter the same event twice (`UNIQUE (EventId, ParticipantId)`), a category name cannot repeat within an event, an event distance and entry fee cannot be negative, `MaxAge` cannot be lower than `MinAge`, and a finishing position cannot be greater than the total number of finishers.
+- Sample data above the required minimum: **2 Organisers, 4 Participants, 3 Events** (Soweto Marathon, Cape Town Cycle Tour and Durban Beachfront Charity Walk — one of each event type), **10 categories** across those events, **8 enrolments** covering all three statuses, and **3 results** with finish times and positions.
+- Three SELECT statements at the end that check the row count per table, list the enrolments per event and show the captured results.
+
+**Running the script**
+
+1. Open `docs/RaceDay-Database-Script.sql` in SQL Server Management Studio.
+2. Connect to your SQL Server instance and execute the script (F5).
+3. The SELECT statements at the end confirm the tables and sample data loaded correctly.
+
+Or from the command line:
+
+```bash
+sqlcmd -S "(localdb)\MSSQLLocalDB" -i "docs/RaceDay-Database-Script.sql"
+```
+
+### ERD and script alignment
+
+The SQL script matches the ERD exactly — the same eight tables, the same attribute names and data types, and the same keys, constraints and cardinality. There are no deliberate differences to explain.
+
+---
