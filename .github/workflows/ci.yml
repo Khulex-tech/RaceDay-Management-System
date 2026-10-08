@@ -1,0 +1,85 @@
+name: CI
+
+# Builds and tests every solution in the repository.
+# Part 2: restores, builds and tests RaceDay.sln (the Web API, and any
+#          xUnit project added to that solution later).
+# Part 3 / final POE: an MVC project added to the solution is restored,
+#          built and tested with no workflow edit. A Dockerfile is built
+#          only after one is added; until then the Docker step is skipped.
+# Part 1 docs checks stay in part1.yml and use the same branch filters.
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - "part-2*"
+      - "part-3*"
+      - "final*"
+  pull_request:
+    branches:
+      - main
+      - master
+      - "part-2*"
+      - "part-3*"
+      - "final*"
+
+jobs:
+  build-and-test:
+    name: Restore, build and test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore, build and test every solution
+        shell: bash
+        run: |
+          mapfile -t solutions < <(find . -name '*.sln' -not -path '*/.*/*' | sort)
+          if [ ${#solutions[@]} -eq 0 ]; then
+            echo "No solution file found."
+            exit 1
+          fi
+          for sln in "${solutions[@]}"; do
+            echo "=== $sln ==="
+            dotnet restore "$sln"
+            dotnet build "$sln" --configuration Release --no-restore
+            dotnet test "$sln" --configuration Release --no-build --verbosity normal
+          done
+
+  docker:
+    name: Docker image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Detect Dockerfile
+        id: detect
+        shell: bash
+        run: |
+          mapfile -t dockerfiles < <(find . -name 'Dockerfile' -not -path '*/.*/*' | sort)
+          if [ ${#dockerfiles[@]} -eq 0 ]; then
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "No Dockerfile found. Docker build will be skipped until Part 3 adds one."
+          else
+            echo "present=true" >> "$GITHUB_OUTPUT"
+            printf '%s\n' "${dockerfiles[@]}" > dockerfiles.txt
+          fi
+
+      - name: Build Docker image
+        if: steps.detect.outputs.present == 'true'
+        shell: bash
+        run: |
+          while IFS= read -r dockerfile; do
+            [ -z "$dockerfile" ] && continue
+            echo "Building $dockerfile"
+            docker build -f "$dockerfile" .
+          done < dockerfiles.txt

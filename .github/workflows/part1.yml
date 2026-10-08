@@ -1,11 +1,23 @@
 name: Part 1
 
+# Part 1 repository checks stay in this workflow.
+# Triggers cover main and the later Part 2 / Part 3 / final branches
+# so those pushes still validate /docs and the README.
 on:
   push:
     branches:
       - main
       - master
+      - "part-2*"
+      - "part-3*"
+      - "final*"
   pull_request:
+    branches:
+      - main
+      - master
+      - "part-2*"
+      - "part-3*"
+      - "final*"
 
 jobs:
   validate-part1:
