@@ -1,15 +1,33 @@
+using Microsoft.EntityFrameworkCore;
+using RaceDay.API.Data;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
+// Controllers and Swagger
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// Database connection to RaceDayDb (connection string is in appsettings.json)
+builder.Services.AddDbContext<RaceDayDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("RaceDayDb")));
+
+/*
+ * Server-side session used for login.
+ * After login the API stores UserId and Role in the session and the client
+ * only receives the session cookie.
+ */
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddSession(options =>
+{
+    options.Cookie.Name = "RaceDay.Session";
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+    options.IdleTimeout = TimeSpan.FromMinutes(30);
+});
+
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -18,7 +36,10 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseAuthorization();
+// Serves uploaded images from wwwroot/uploads
+app.UseStaticFiles();
+
+app.UseSession();
 
 app.MapControllers();
 
