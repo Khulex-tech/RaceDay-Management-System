@@ -7,12 +7,11 @@ using RaceDay.API.Models;
 
 namespace RaceDay.API.Controllers
 {
-    /*
-     * Enrolment endpoints (section 6 of the endpoint plan).
-     * Participants enter events and manage their own enrolments.
-     * Organisers view and confirm enrolments for the events they own.
-     */
+    /// <summary>
+    /// Handles event enrolments, participant registration into categories, organiser status updates, and withdrawals.
+    /// </summary>
     [Route("api")]
+    [Produces("application/json")]
     public class EnrolmentsController : BaseApiController
     {
         private readonly RaceDayDbContext _db;
@@ -22,8 +21,24 @@ namespace RaceDay.API.Controllers
             _db = db;
         }
 
-        // POST /api/events/{eventId}/enter
+        /// <summary>
+        /// Enters the logged-in Participant into an event under a chosen category.
+        /// </summary>
+        /// <param name="eventId">Event ID.</param>
+        /// <param name="dto">Chosen category ID.</param>
+        /// <response code="201">Enrolment created.</response>
+        /// <response code="400">Bad Request, category does not belong to event.</response>
+        /// <response code="401">Unauthorized, no active session.</response>
+        /// <response code="403">Forbidden, caller is not a Participant.</response>
+        /// <response code="404">Not Found, event or category does not exist.</response>
+        /// <response code="409">Conflict, already enrolled or event has passed.</response>
         [HttpPost("events/{eventId:int}/enter")]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
         public async Task<IActionResult> EnterEvent(int eventId, CategoryChoiceDto dto)
         {
             if (CurrentUserId == null)
@@ -102,8 +117,16 @@ namespace RaceDay.API.Controllers
             });
         }
 
-        // GET /api/enrolments/my-enrolments
+        /// <summary>
+        /// Returns all enrolments for the currently authenticated Participant.
+        /// </summary>
+        /// <response code="200">List of enrolments returned.</response>
+        /// <response code="401">Unauthorized, no session.</response>
+        /// <response code="403">Forbidden, caller is not a Participant.</response>
         [HttpGet("enrolments/my-enrolments")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> GetMyEnrolments()
         {
             if (CurrentUserId == null)
@@ -135,8 +158,19 @@ namespace RaceDay.API.Controllers
             return Ok(enrolments);
         }
 
-        // GET /api/enrolments/{id} - visible to the Participant and the event's Organiser
+        /// <summary>
+        /// Returns a single enrolment by ID (visible to Participant owner or event Organiser).
+        /// </summary>
+        /// <param name="id">Enrolment ID.</param>
+        /// <response code="200">Enrolment details returned.</response>
+        /// <response code="401">Unauthorized, no session.</response>
+        /// <response code="403">Forbidden, caller is neither owner nor event Organiser.</response>
+        /// <response code="404">Not Found, enrolment does not exist.</response>
         [HttpGet("enrolments/{id:int}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetEnrolment(int id)
         {
             if (CurrentUserId == null)
@@ -180,8 +214,21 @@ namespace RaceDay.API.Controllers
             });
         }
 
-        // GET /api/events/{eventId}/enrolments?status=Confirmed&categoryId=
+        /// <summary>
+        /// Returns all participant enrolments for an event owned by the authenticated Organiser.
+        /// </summary>
+        /// <param name="eventId">Event ID.</param>
+        /// <param name="status">Optional status filter (Pending, Confirmed, Cancelled).</param>
+        /// <param name="categoryId">Optional category filter.</param>
+        /// <response code="200">List of enrolments returned.</response>
+        /// <response code="401">Unauthorized, no session.</response>
+        /// <response code="403">Forbidden, caller is not the event Organiser.</response>
+        /// <response code="404">Not Found, event does not exist.</response>
         [HttpGet("events/{eventId:int}/enrolments")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetEventEnrolments(int eventId, string? status, int? categoryId)
         {
             if (CurrentUserId == null)
@@ -236,8 +283,22 @@ namespace RaceDay.API.Controllers
             return Ok(enrolments);
         }
 
-        // PUT /api/enrolments/{id}/status - Organiser confirms or cancels an enrolment
+        /// <summary>
+        /// Updates the status of an enrolment (Organiser confirms or cancels).
+        /// </summary>
+        /// <param name="id">Enrolment ID.</param>
+        /// <param name="dto">Updated status (Pending, Confirmed, Cancelled).</param>
+        /// <response code="200">Enrolment status updated.</response>
+        /// <response code="400">Bad Request, invalid status value.</response>
+        /// <response code="401">Unauthorized, no session.</response>
+        /// <response code="403">Forbidden, caller is not the event Organiser.</response>
+        /// <response code="404">Not Found, enrolment does not exist.</response>
         [HttpPut("enrolments/{id:int}/status")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> UpdateStatus(int id, EnrolmentStatusDto dto)
         {
             if (CurrentUserId == null)
@@ -275,8 +336,24 @@ namespace RaceDay.API.Controllers
             return Ok(new { enrolmentId = enrolment.EnrolmentId, status = enrolment.EnrolmentStatus });
         }
 
-        // PUT /api/enrolments/{id}/category - Participant switches category before race day
+        /// <summary>
+        /// Switches the category of an existing enrolment before race day.
+        /// </summary>
+        /// <param name="id">Enrolment ID.</param>
+        /// <param name="dto">Target category ID.</param>
+        /// <response code="200">Enrolment category updated.</response>
+        /// <response code="400">Bad Request, category does not belong to event.</response>
+        /// <response code="401">Unauthorized, no session.</response>
+        /// <response code="403">Forbidden, caller is not the Participant owner.</response>
+        /// <response code="404">Not Found, enrolment does not exist.</response>
+        /// <response code="409">Conflict, event has already taken place.</response>
         [HttpPut("enrolments/{id:int}/category")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
         public async Task<IActionResult> ChangeCategory(int id, CategoryChoiceDto dto)
         {
             if (CurrentUserId == null)
@@ -328,8 +405,21 @@ namespace RaceDay.API.Controllers
             });
         }
 
-        // DELETE /api/enrolments/{id} - Participant withdraws before race day
+        /// <summary>
+        /// Withdraws the authenticated Participant from an event before race day.
+        /// </summary>
+        /// <param name="id">Enrolment ID.</param>
+        /// <response code="204">No Content, enrolment withdrawn.</response>
+        /// <response code="401">Unauthorized, no session.</response>
+        /// <response code="403">Forbidden, caller is not the Participant owner.</response>
+        /// <response code="404">Not Found, enrolment does not exist.</response>
+        /// <response code="409">Conflict, event has taken place or result captured.</response>
         [HttpDelete("enrolments/{id:int}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
         public async Task<IActionResult> Withdraw(int id)
         {
             if (CurrentUserId == null)

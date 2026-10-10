@@ -1,3 +1,4 @@
+using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using RaceDay.API.Data;
 
@@ -6,7 +7,22 @@ var builder = WebApplication.CreateBuilder(args);
 // Controllers and Swagger
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+    {
+        Title = "RaceDay API",
+        Version = "v1",
+        Description = "RESTful API for the RaceDay Event Management Platform for South African Road Events."
+    });
+
+    var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFilename);
+    if (File.Exists(xmlPath))
+    {
+        options.IncludeXmlComments(xmlPath);
+    }
+});
 
 // Database connection to RaceDayDb (connection string is in appsettings.json)
 builder.Services.AddDbContext<RaceDayDbContext>(options =>

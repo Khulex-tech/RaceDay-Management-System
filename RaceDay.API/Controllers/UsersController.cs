@@ -6,12 +6,11 @@ using RaceDay.API.Models;
 
 namespace RaceDay.API.Controllers
 {
-    /*
-     * User profile endpoints (section 3 of the endpoint plan).
-     * The profile is always taken from the session, never from the URL,
-     * so a user can only ever see or change their own profile.
-     */
+    /// <summary>
+    /// Handles user profile viewing, profile editing, password changes, and profile picture uploads.
+    /// </summary>
     [Route("api/users")]
+    [Produces("application/json")]
     public class UsersController : BaseApiController
     {
         private readonly RaceDayDbContext _db;
@@ -23,8 +22,14 @@ namespace RaceDay.API.Controllers
             _env = env;
         }
 
-        // GET /api/users/profile
+        /// <summary>
+        /// Returns the profile details of the currently authenticated user.
+        /// </summary>
+        /// <response code="200">User profile returned.</response>
+        /// <response code="401">Unauthorized, no active session.</response>
         [HttpGet("profile")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> GetProfile()
         {
             if (CurrentUserId == null)
@@ -41,8 +46,15 @@ namespace RaceDay.API.Controllers
             return Ok(ToProfile(user));
         }
 
-        // PUT /api/users/profile
+        /// <summary>
+        /// Updates the profile details of the currently authenticated user.
+        /// </summary>
+        /// <param name="dto">Updated personal profile details.</param>
+        /// <response code="200">User profile updated.</response>
+        /// <response code="401">Unauthorized, no active session.</response>
         [HttpPut("profile")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> UpdateProfile(UpdateProfileDto dto)
         {
             if (CurrentUserId == null)
@@ -64,8 +76,15 @@ namespace RaceDay.API.Controllers
             return Ok(ToProfile(user));
         }
 
-        // PUT /api/users/profile/password
+        /// <summary>
+        /// Updates the password of the currently authenticated user.
+        /// </summary>
+        /// <param name="dto">Current password and new password details.</param>
+        /// <response code="200">Password successfully updated.</response>
+        /// <response code="401">Unauthorized, current password incorrect or no session.</response>
         [HttpPut("profile/password")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> ChangePassword(ChangePasswordDto dto)
         {
             if (CurrentUserId == null)
@@ -91,8 +110,18 @@ namespace RaceDay.API.Controllers
             return Ok(new { message = "Password updated." });
         }
 
-        // POST /api/users/profile/picture
+        /// <summary>
+        /// Uploads a profile picture for the logged-in user.
+        /// </summary>
+        /// <param name="file">Image file (JPEG/PNG, up to 5 MB).</param>
+        /// <response code="200">Profile picture uploaded and URL returned.</response>
+        /// <response code="400">Bad request, invalid file format or size.</response>
+        /// <response code="401">Unauthorized, no active session.</response>
         [HttpPost("profile/picture")]
+        [Consumes("multipart/form-data")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> UploadProfilePicture(IFormFile? file)
         {
             if (CurrentUserId == null)
@@ -118,8 +147,19 @@ namespace RaceDay.API.Controllers
             return Ok(new { profilePictureUrl = user.ProfilePictureUrl });
         }
 
-        // GET /api/users/{id} - limited public view, Organisers only
+        /// <summary>
+        /// Returns limited public view of a user (Organisers only).
+        /// </summary>
+        /// <param name="id">User ID.</param>
+        /// <response code="200">User details returned.</response>
+        /// <response code="401">Unauthorized, no active session.</response>
+        /// <response code="403">Forbidden, caller is not an Organiser.</response>
+        /// <response code="404">Not Found, user does not exist.</response>
         [HttpGet("{id:int}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetUser(int id)
         {
             if (CurrentUserId == null)
