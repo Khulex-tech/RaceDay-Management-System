@@ -8,12 +8,11 @@ using RaceDay.API.Models;
 
 namespace RaceDay.API.Controllers
 {
-    /*
-     * Result endpoints (section 7 of the endpoint plan).
-     * Organisers capture results for their own events after race day.
-     * Participants view their own race history, and event results are public.
-     */
+    /// <summary>
+    /// Handles capture, updates, deletion, and retrieval of participant race results.
+    /// </summary>
     [Route("api")]
+    [Produces("application/json")]
     public class ResultsController : BaseApiController
     {
         private readonly RaceDayDbContext _db;
@@ -23,8 +22,24 @@ namespace RaceDay.API.Controllers
             _db = db;
         }
 
-        // POST /api/enrolments/{enrolmentId}/result
+        /// <summary>
+        /// Captures a finish time and finishing position for an enrolment after race day.
+        /// </summary>
+        /// <param name="enrolmentId">Enrolment ID.</param>
+        /// <param name="dto">Result details (finish time hh:mm:ss, position).</param>
+        /// <response code="201">Result captured.</response>
+        /// <response code="400">Bad Request, invalid finish time format.</response>
+        /// <response code="401">Unauthorized, no session.</response>
+        /// <response code="403">Forbidden, caller is not the event Organiser.</response>
+        /// <response code="404">Not Found, enrolment does not exist.</response>
+        /// <response code="409">Conflict, event is in future or result already recorded.</response>
         [HttpPost("enrolments/{enrolmentId:int}/result")]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
         public async Task<IActionResult> CaptureResult(int enrolmentId, ResultRequestDto dto)
         {
             if (CurrentUserId == null)
@@ -95,8 +110,22 @@ namespace RaceDay.API.Controllers
             });
         }
 
-        // PUT /api/results/{id}
+        /// <summary>
+        /// Updates a previously captured race result (Organiser only).
+        /// </summary>
+        /// <param name="id">Result ID.</param>
+        /// <param name="dto">Updated finish time and position.</param>
+        /// <response code="200">Result updated.</response>
+        /// <response code="400">Bad Request, invalid time format.</response>
+        /// <response code="401">Unauthorized, no session.</response>
+        /// <response code="403">Forbidden, caller is not the event Organiser.</response>
+        /// <response code="404">Not Found, result does not exist.</response>
         [HttpPut("results/{id:int}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> UpdateResult(int id, ResultRequestDto dto)
         {
             if (CurrentUserId == null)
@@ -144,8 +173,19 @@ namespace RaceDay.API.Controllers
             });
         }
 
-        // DELETE /api/results/{id}
+        /// <summary>
+        /// Deletes a race result (Organiser only).
+        /// </summary>
+        /// <param name="id">Result ID.</param>
+        /// <response code="204">No Content, result deleted.</response>
+        /// <response code="401">Unauthorized, no session.</response>
+        /// <response code="403">Forbidden, caller is not the event Organiser.</response>
+        /// <response code="404">Not Found, result does not exist.</response>
         [HttpDelete("results/{id:int}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DeleteResult(int id)
         {
             if (CurrentUserId == null)
@@ -178,8 +218,16 @@ namespace RaceDay.API.Controllers
             return NoContent();
         }
 
-        // GET /api/events/{eventId}/results?categoryId=
+        /// <summary>
+        /// Returns public race results for an event ordered by position.
+        /// </summary>
+        /// <param name="eventId">Event ID.</param>
+        /// <param name="categoryId">Optional category filter.</param>
+        /// <response code="200">List of results returned.</response>
+        /// <response code="404">Not Found, event does not exist.</response>
         [HttpGet("events/{eventId:int}/results")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetEventResults(int eventId, int? categoryId)
         {
             bool eventExists = await _db.Events.AnyAsync(e => e.EventId == eventId);
@@ -213,8 +261,16 @@ namespace RaceDay.API.Controllers
             return Ok(results);
         }
 
-        // GET /api/results/my-results
+        /// <summary>
+        /// Returns race result history for the authenticated Participant.
+        /// </summary>
+        /// <response code="200">List of personal race results returned.</response>
+        /// <response code="401">Unauthorized, no session.</response>
+        /// <response code="403">Forbidden, caller is not a Participant.</response>
         [HttpGet("results/my-results")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> GetMyResults()
         {
             if (CurrentUserId == null)
@@ -246,8 +302,19 @@ namespace RaceDay.API.Controllers
             return Ok(results);
         }
 
-        // GET /api/results/{id} - visible to the Participant and the event's Organiser
+        /// <summary>
+        /// Returns a single result by ID (visible to Participant owner or event Organiser).
+        /// </summary>
+        /// <param name="id">Result ID.</param>
+        /// <response code="200">Result details returned.</response>
+        /// <response code="401">Unauthorized, no session.</response>
+        /// <response code="403">Forbidden, caller is neither owner nor event Organiser.</response>
+        /// <response code="404">Not Found, result does not exist.</response>
         [HttpGet("results/{id:int}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetResult(int id)
         {
             if (CurrentUserId == null)

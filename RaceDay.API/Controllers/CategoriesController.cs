@@ -7,12 +7,11 @@ using RaceDay.API.Models;
 
 namespace RaceDay.API.Controllers
 {
-    /*
-     * Category endpoints (section 5 of the endpoint plan).
-     * Anyone can view categories. Only the Organiser who owns the event can add,
-     * change or remove its categories.
-     */
+    /// <summary>
+    /// Handles creation, updates, deletion, and querying of event categories.
+    /// </summary>
     [Route("api")]
+    [Produces("application/json")]
     public class CategoriesController : BaseApiController
     {
         private readonly RaceDayDbContext _db;
@@ -22,8 +21,15 @@ namespace RaceDay.API.Controllers
             _db = db;
         }
 
-        // GET /api/events/{eventId}/categories
+        /// <summary>
+        /// Returns all categories defined for a specific event.
+        /// </summary>
+        /// <param name="eventId">Event ID.</param>
+        /// <response code="200">List of categories returned.</response>
+        /// <response code="404">Not Found, event does not exist.</response>
         [HttpGet("events/{eventId:int}/categories")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetCategoriesForEvent(int eventId)
         {
             bool eventExists = await _db.Events.AnyAsync(e => e.EventId == eventId);
@@ -50,8 +56,15 @@ namespace RaceDay.API.Controllers
             return Ok(categories);
         }
 
-        // GET /api/categories/{id}
+        /// <summary>
+        /// Returns details for a single category.
+        /// </summary>
+        /// <param name="id">Category ID.</param>
+        /// <response code="200">Category details returned.</response>
+        /// <response code="404">Not Found, category does not exist.</response>
         [HttpGet("categories/{id:int}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetCategory(int id)
         {
             var category = await _db.Categories
@@ -77,8 +90,24 @@ namespace RaceDay.API.Controllers
             return Ok(category);
         }
 
-        // POST /api/events/{eventId}/categories
+        /// <summary>
+        /// Creates a new category under an event owned by the authenticated Organiser.
+        /// </summary>
+        /// <param name="eventId">Event ID.</param>
+        /// <param name="dto">Category details.</param>
+        /// <response code="201">Category created.</response>
+        /// <response code="400">Bad Request, invalid age range.</response>
+        /// <response code="401">Unauthorized, no session.</response>
+        /// <response code="403">Forbidden, caller is not the event Organiser.</response>
+        /// <response code="404">Not Found, event does not exist.</response>
+        /// <response code="409">Conflict, category name already exists on this event.</response>
         [HttpPost("events/{eventId:int}/categories")]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
         public async Task<IActionResult> CreateCategory(int eventId, CategoryRequestDto dto)
         {
             if (CurrentUserId == null)
@@ -130,8 +159,24 @@ namespace RaceDay.API.Controllers
             return CreatedAtAction(nameof(GetCategory), new { id = category.CategoryId }, ToCategoryResponse(category));
         }
 
-        // PUT /api/categories/{id}
+        /// <summary>
+        /// Updates an existing category on an event owned by the authenticated Organiser.
+        /// </summary>
+        /// <param name="id">Category ID.</param>
+        /// <param name="dto">Updated category details.</param>
+        /// <response code="200">Category updated.</response>
+        /// <response code="400">Bad Request, invalid age range.</response>
+        /// <response code="401">Unauthorized, no session.</response>
+        /// <response code="403">Forbidden, caller is not the event Organiser.</response>
+        /// <response code="404">Not Found, category does not exist.</response>
+        /// <response code="409">Conflict, duplicate category name on event.</response>
         [HttpPut("categories/{id:int}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
         public async Task<IActionResult> UpdateCategory(int id, CategoryRequestDto dto)
         {
             if (CurrentUserId == null)
@@ -182,8 +227,21 @@ namespace RaceDay.API.Controllers
             return Ok(ToCategoryResponse(category));
         }
 
-        // DELETE /api/categories/{id}
+        /// <summary>
+        /// Deletes a category if no participants are enrolled in it.
+        /// </summary>
+        /// <param name="id">Category ID.</param>
+        /// <response code="204">No Content, category deleted.</response>
+        /// <response code="401">Unauthorized, no session.</response>
+        /// <response code="403">Forbidden, caller is not the event Organiser.</response>
+        /// <response code="404">Not Found, category does not exist.</response>
+        /// <response code="409">Conflict, active enrolments exist in category.</response>
         [HttpDelete("categories/{id:int}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
         public async Task<IActionResult> DeleteCategory(int id)
         {
             if (CurrentUserId == null)

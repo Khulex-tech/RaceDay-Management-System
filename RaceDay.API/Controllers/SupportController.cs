@@ -5,8 +5,11 @@ using RaceDay.API.Helpers;
 
 namespace RaceDay.API.Controllers
 {
-    // Supporting endpoints (section 8 of the endpoint plan)
+    /// <summary>
+    /// Provides supporting endpoints for UI badge lookup, organiser dashboard totals, and system health checks.
+    /// </summary>
     [Route("api")]
+    [Produces("application/json")]
     public class SupportController : BaseApiController
     {
         private readonly RaceDayDbContext _db;
@@ -16,8 +19,14 @@ namespace RaceDay.API.Controllers
             _db = db;
         }
 
-        // GET /api/enrolment-statuses - status list with badge colours for the front end
+        /// <summary>
+        /// Returns enrolment status definitions with badge color codes for the user interface.
+        /// </summary>
+        /// <response code="200">List of enrolment statuses and hex color codes.</response>
+        /// <response code="401">Unauthorized, no active session.</response>
         [HttpGet("enrolment-statuses")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public IActionResult GetEnrolmentStatuses()
         {
             if (CurrentUserId == null)
@@ -39,8 +48,16 @@ namespace RaceDay.API.Controllers
             return Ok(statuses);
         }
 
-        // GET /api/dashboard/organiser
+        /// <summary>
+        /// Returns aggregated dashboard metrics for the authenticated Organiser.
+        /// </summary>
+        /// <response code="200">Organiser dashboard summary returned.</response>
+        /// <response code="401">Unauthorized, no active session.</response>
+        /// <response code="403">Forbidden, caller is not an Organiser.</response>
         [HttpGet("dashboard/organiser")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> GetOrganiserDashboard()
         {
             if (CurrentUserId == null)
@@ -75,8 +92,14 @@ namespace RaceDay.API.Controllers
             return Ok(new { totalEvents, totalEnrolments, upcomingEvents });
         }
 
-        // GET /api/health - checks that the API can reach the database
+        /// <summary>
+        /// Verifies API system health and database connectivity.
+        /// </summary>
+        /// <response code="200">System healthy and database connected.</response>
+        /// <response code="503">Service unavailable, database unreachable.</response>
         [HttpGet("health")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
         public async Task<IActionResult> Health()
         {
             bool connected;

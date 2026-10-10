@@ -7,12 +7,11 @@ using RaceDay.API.Models;
 
 namespace RaceDay.API.Controllers
 {
-    /*
-     * Event endpoints (section 4 of the endpoint plan).
-     * Anyone can browse events. Only Organisers can create events, and only
-     * the Organiser who created an event can change or delete it.
-     */
+    /// <summary>
+    /// Handles event creation, search filtering, details lookup, banner uploads, and event types listing.
+    /// </summary>
     [Route("api")]
+    [Produces("application/json")]
     public class EventsController : BaseApiController
     {
         private readonly RaceDayDbContext _db;
@@ -24,8 +23,20 @@ namespace RaceDay.API.Controllers
             _env = env;
         }
 
-        // GET /api/events?eventType=Run&fromDate=&toDate=&search=&page=1&pageSize=10
+        /// <summary>
+        /// Returns all events with optional type, date, search term, and pagination parameters.
+        /// </summary>
+        /// <param name="eventType">Optional event type filter (Run, Walk, Cycle).</param>
+        /// <param name="fromDate">Optional start date filter.</param>
+        /// <param name="toDate">Optional end date filter.</param>
+        /// <param name="search">Search text matching event name or location.</param>
+        /// <param name="page">Page number (default 1).</param>
+        /// <param name="pageSize">Page size (default 10, maximum 50).</param>
+        /// <response code="200">Paginated list of events returned.</response>
+        /// <response code="400">Bad Request, invalid pagination or date range.</response>
         [HttpGet("events")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> GetEvents(string? eventType, DateTime? fromDate, DateTime? toDate,
             string? search, int page = 1, int pageSize = 10)
         {
@@ -84,8 +95,15 @@ namespace RaceDay.API.Controllers
             return Ok(new { page, pageSize, totalCount, items });
         }
 
-        // GET /api/events/{id}
+        /// <summary>
+        /// Returns full details for a single event including categories and organiser info.
+        /// </summary>
+        /// <param name="id">Event ID.</param>
+        /// <response code="200">Event details returned.</response>
+        /// <response code="404">Not Found, event does not exist.</response>
         [HttpGet("events/{id:int}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetEvent(int id)
         {
             var ev = await _db.Events
@@ -125,8 +143,13 @@ namespace RaceDay.API.Controllers
             return Ok(ev);
         }
 
-        // GET /api/events/upcoming?take=10
+        /// <summary>
+        /// Returns a quick list of upcoming future events.
+        /// </summary>
+        /// <param name="take">Number of events to take (default 10).</param>
+        /// <response code="200">List of upcoming event summaries returned.</response>
         [HttpGet("events/upcoming")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> GetUpcomingEvents(int take = 10)
         {
             // Keep the number of results sensible
@@ -154,8 +177,16 @@ namespace RaceDay.API.Controllers
             return Ok(events);
         }
 
-        // GET /api/events/my-events (Organiser dashboard list)
+        /// <summary>
+        /// Returns events created by the logged-in Organiser.
+        /// </summary>
+        /// <response code="200">List of organiser events returned.</response>
+        /// <response code="401">Unauthorized, no active session.</response>
+        /// <response code="403">Forbidden, caller is not an Organiser.</response>
         [HttpGet("events/my-events")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> GetMyEvents()
         {
             if (CurrentUserId == null)
@@ -184,8 +215,19 @@ namespace RaceDay.API.Controllers
             return Ok(events);
         }
 
-        // POST /api/events
+        /// <summary>
+        /// Creates a new event owned by the authenticated Organiser.
+        /// </summary>
+        /// <param name="dto">Event details.</param>
+        /// <response code="201">Event created.</response>
+        /// <response code="400">Bad Request, date in past or invalid event type.</response>
+        /// <response code="401">Unauthorized, no session.</response>
+        /// <response code="403">Forbidden, caller is not an Organiser.</response>
         [HttpPost("events")]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> CreateEvent(EventRequestDto dto)
         {
             if (CurrentUserId == null)
@@ -227,8 +269,22 @@ namespace RaceDay.API.Controllers
             return CreatedAtAction(nameof(GetEvent), new { id = ev.EventId }, ToEventResponse(ev, eventType.Name));
         }
 
-        // PUT /api/events/{id}
+        /// <summary>
+        /// Updates an existing event owned by the authenticated Organiser.
+        /// </summary>
+        /// <param name="id">Event ID.</param>
+        /// <param name="dto">Updated event details.</param>
+        /// <response code="200">Event updated.</response>
+        /// <response code="400">Bad Request, date in past or invalid event type.</response>
+        /// <response code="401">Unauthorized, no session.</response>
+        /// <response code="403">Forbidden, caller is not the event Organiser.</response>
+        /// <response code="404">Not Found, event does not exist.</response>
         [HttpPut("events/{id:int}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> UpdateEvent(int id, EventRequestDto dto)
         {
             if (CurrentUserId == null)
@@ -274,8 +330,21 @@ namespace RaceDay.API.Controllers
             return Ok(ToEventResponse(ev, eventType.Name));
         }
 
-        // DELETE /api/events/{id}
+        /// <summary>
+        /// Deletes an event if no confirmed enrolments exist.
+        /// </summary>
+        /// <param name="id">Event ID.</param>
+        /// <response code="204">No Content, event deleted.</response>
+        /// <response code="401">Unauthorized, no session.</response>
+        /// <response code="403">Forbidden, caller is not the event Organiser.</response>
+        /// <response code="404">Not Found, event does not exist.</response>
+        /// <response code="409">Conflict, event has confirmed enrolments.</response>
         [HttpDelete("events/{id:int}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
         public async Task<IActionResult> DeleteEvent(int id)
         {
             if (CurrentUserId == null)
@@ -319,8 +388,23 @@ namespace RaceDay.API.Controllers
             return NoContent();
         }
 
-        // POST /api/events/{id}/banner
+        /// <summary>
+        /// Uploads an event banner image for an event owned by the authenticated Organiser.
+        /// </summary>
+        /// <param name="id">Event ID.</param>
+        /// <param name="file">Image file (JPEG/PNG, max 5 MB).</param>
+        /// <response code="200">Event banner uploaded and URL returned.</response>
+        /// <response code="400">Bad Request, invalid image file or size.</response>
+        /// <response code="401">Unauthorized, no session.</response>
+        /// <response code="403">Forbidden, caller is not the event Organiser.</response>
+        /// <response code="404">Not Found, event does not exist.</response>
         [HttpPost("events/{id:int}/banner")]
+        [Consumes("multipart/form-data")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> UploadBanner(int id, IFormFile? file)
         {
             if (CurrentUserId == null)
@@ -356,8 +440,12 @@ namespace RaceDay.API.Controllers
             return Ok(new { eventId = ev.EventId, bannerImageUrl = ev.BannerImageUrl });
         }
 
-        // GET /api/event-types
+        /// <summary>
+        /// Returns available event types (Run, Walk, Cycle).
+        /// </summary>
+        /// <response code="200">List of event types returned.</response>
         [HttpGet("event-types")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> GetEventTypes()
         {
             var types = await _db.EventTypes

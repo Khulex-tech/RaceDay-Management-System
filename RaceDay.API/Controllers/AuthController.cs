@@ -7,8 +7,11 @@ using RaceDay.API.Models;
 
 namespace RaceDay.API.Controllers
 {
-    // Handles register, login, logout and "who am I" (section 2 of the endpoint plan)
+    /// <summary>
+    /// Handles user registration, authentication, logout, and identity checks.
+    /// </summary>
     [Route("api/auth")]
+    [Produces("application/json")]
     public class AuthController : BaseApiController
     {
         private readonly RaceDayDbContext _db;
@@ -18,8 +21,17 @@ namespace RaceDay.API.Controllers
             _db = db;
         }
 
-        // POST /api/auth/register
+        /// <summary>
+        /// Registers a new user account with role Organiser or Participant.
+        /// </summary>
+        /// <param name="dto">Registration details including name, email, password, and role.</param>
+        /// <response code="201">User account successfully created.</response>
+        /// <response code="400">Validation failed (invalid role or malformed input).</response>
+        /// <response code="409">Conflict, email is already registered.</response>
         [HttpPost("register")]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
         public async Task<IActionResult> Register(RegisterDto dto)
         {
             // Only the two system roles are allowed
@@ -60,8 +72,15 @@ namespace RaceDay.API.Controllers
             });
         }
 
-        // POST /api/auth/login
+        /// <summary>
+        /// Authenticates user credentials and starts a server-side session.
+        /// </summary>
+        /// <param name="dto">Login credentials (email and password).</param>
+        /// <response code="200">Login successful, session cookie set.</response>
+        /// <response code="401">Unauthorized, invalid email or password.</response>
         [HttpPost("login")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> Login(LoginDto dto)
         {
             string email = dto.Email.Trim().ToLower();
@@ -85,8 +104,14 @@ namespace RaceDay.API.Controllers
             });
         }
 
-        // POST /api/auth/logout
+        /// <summary>
+        /// Ends the current user session.
+        /// </summary>
+        /// <response code="200">Session successfully ended.</response>
+        /// <response code="401">Unauthorized, no active session found.</response>
         [HttpPost("logout")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public IActionResult Logout()
         {
             if (CurrentUserId == null)
@@ -98,8 +123,14 @@ namespace RaceDay.API.Controllers
             return Ok(new { message = "Session ended." });
         }
 
-        // GET /api/auth/me
+        /// <summary>
+        /// Returns the identity and role details stored in the active session.
+        /// </summary>
+        /// <response code="200">Active session user details returned.</response>
+        /// <response code="401">Unauthorized, no active session found.</response>
         [HttpGet("me")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> Me()
         {
             if (CurrentUserId == null)
