@@ -16,7 +16,7 @@ Key deliverables included in Part 2:
 - **ASP.NET Core Web API (`RaceDay.API`)**: Complete C# Web API project with EF Core Code-First data context (`RaceDayDbContext`).
 - **Authentication & Role Authorization**: Server-side session authentication (`ISession`) with secure PBKDF2 password hashing and strict Organiser vs Participant role enforcement.
 - **Swagger / OpenAPI Integration**: Full Swagger UI integration with XML documentation comments and annotated HTTP response status codes.
-- **Unit Testing Suite (`RaceDay.Tests`)**: Comprehensive xUnit test suite (37 unit tests) covering authentication, role rejection, event CRUD, category management, enrolment workflow, and result processing.
+- **Unit Testing Suite (`RaceDay.Tests`)**: Comprehensive xUnit test suite (38 unit tests) covering authentication, role rejection, event CRUD, category management, enrolment workflow, result processing, and API health.
 - **Automated CI/CD**: GitHub Actions workflow (`.github/workflows/ci.yml`) automatically restoring, building, and executing unit tests on every push.
 
 ---
@@ -283,7 +283,7 @@ https://localhost:7043/swagger
 All 39 endpoints are interactive, documented with XML comments, input schemas, and expected HTTP status codes (`200`, `201`, `400`, `401`, `403`, `404`, `409`).
 
 ### 4. Execute Unit Tests
-To run the automated xUnit test suite (37 unit tests covering Auth, Role Authorization, Events, Categories, Enrolments, and Results):
+To run the automated xUnit test suite (38 unit tests covering Auth, Role Authorization, Events, Categories, Enrolments, Results, and API health):
 ```bash
 dotnet test
 ```
