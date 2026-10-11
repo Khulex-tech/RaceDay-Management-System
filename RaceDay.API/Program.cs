@@ -24,9 +24,9 @@ builder.Services.AddSwaggerGen(options =>
     }
 });
 
-// Database connection to RaceDayDb (connection string is in appsettings.json)
+// The connection string is supplied through environment-specific configuration.
 builder.Services.AddDbContext<RaceDayDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("RaceDayDb")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 /*
  * Server-side session used for login.
