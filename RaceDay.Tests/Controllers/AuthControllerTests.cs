@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using RaceDay.API.Controllers;
 using RaceDay.API.Dtos;
 using RaceDay.API.Helpers;
@@ -28,7 +29,7 @@ namespace RaceDay.Tests.Controllers
                 Password = "Password123!",
                 ConfirmPassword = "Password123!",
                 PhoneNumber = "0821234567",
-                Role = Roles.Organiser
+                Role = Roles.Participant
             };
 
             // Act
@@ -41,8 +42,76 @@ namespace RaceDay.Tests.Controllers
             var userInDb = db.Users.FirstOrDefault(u => u.Email == "thabo@raceday.co.za");
             Assert.NotNull(userInDb);
             Assert.Equal("Thabo", userInDb.FirstName);
-            Assert.Equal(Roles.Organiser, userInDb.Role);
+            Assert.Equal(Roles.Participant, userInDb.Role);
             Assert.True(PasswordHelper.VerifyPassword("Password123!", userInDb.PasswordHash));
+        }
+
+        [Fact]
+        public async Task Register_OrganiserRole_Returns400AndDoesNotCreateOrganiser()
+        {
+            var db = TestDbContextFactory.CreateDbContext(nameof(Register_OrganiserRole_Returns400AndDoesNotCreateOrganiser));
+            var controller = new AuthController(db).WithSession();
+            var dto = new RegisterDto
+            {
+                FirstName = "Untrusted",
+                LastName = "Organiser",
+                Email = "untrusted@raceday.co.za",
+                Password = "Password123!",
+                ConfirmPassword = "Password123!",
+                Role = Roles.Organiser
+            };
+
+            var result = await controller.Register(dto);
+
+            Assert.IsType<BadRequestObjectResult>(result);
+            Assert.DoesNotContain(db.Users, user => user.Email == dto.Email);
+        }
+
+        [Fact]
+        public async Task RegisterOrganiser_MissingInviteCode_Returns401()
+        {
+            var db = TestDbContextFactory.CreateDbContext(nameof(RegisterOrganiser_MissingInviteCode_Returns401));
+            var controller = new AuthController(db).WithSession();
+            var dto = new OrganiserRegistrationDto
+            {
+                FirstName = "Trusted",
+                LastName = "Organiser",
+                Email = "trusted@raceday.co.za",
+                Password = "Password123!",
+                ConfirmPassword = "Password123!"
+            };
+
+            var result = await controller.RegisterOrganiser(dto, null);
+
+            var unauthorized = Assert.IsType<UnauthorizedObjectResult>(result);
+            Assert.Equal(401, unauthorized.StatusCode);
+        }
+
+        [Fact]
+        public async Task RegisterOrganiser_ValidInviteCode_CreatesOrganiser()
+        {
+            var db = TestDbContextFactory.CreateDbContext(nameof(RegisterOrganiser_ValidInviteCode_CreatesOrganiser));
+            var configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["Authentication:OrganiserInviteCode"] = "test-invite-code"
+                })
+                .Build();
+            var controller = new AuthController(db, configuration).WithSession();
+            var dto = new OrganiserRegistrationDto
+            {
+                FirstName = "Trusted",
+                LastName = "Organiser",
+                Email = "trusted@raceday.co.za",
+                Password = "Password123!",
+                ConfirmPassword = "Password123!"
+            };
+
+            var result = await controller.RegisterOrganiser(dto, "test-invite-code");
+
+            var created = Assert.IsType<ObjectResult>(result);
+            Assert.Equal(201, created.StatusCode);
+            Assert.Equal(Roles.Organiser, db.Users.Single(user => user.Email == dto.Email).Role);
         }
 
         [Fact]

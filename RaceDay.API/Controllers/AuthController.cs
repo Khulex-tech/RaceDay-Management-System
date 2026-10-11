@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Cryptography;
+using System.Text;
 using RaceDay.API.Data;
 using RaceDay.API.Dtos;
 using RaceDay.API.Helpers;
@@ -15,14 +17,16 @@ namespace RaceDay.API.Controllers
     public class AuthController : BaseApiController
     {
         private readonly RaceDayDbContext _db;
+        private readonly IConfiguration _configuration;
 
-        public AuthController(RaceDayDbContext db)
+        public AuthController(RaceDayDbContext db, IConfiguration? configuration = null)
         {
             _db = db;
+            _configuration = configuration ?? new ConfigurationBuilder().Build();
         }
 
         /// <summary>
-        /// Registers a new user account with role Organiser or Participant.
+        /// Registers a new Participant account.
         /// </summary>
         /// <param name="dto">Registration details including name, email, password, and role.</param>
         /// <response code="201">User account successfully created.</response>
@@ -34,13 +38,48 @@ namespace RaceDay.API.Controllers
         [ProducesResponseType(StatusCodes.Status409Conflict)]
         public async Task<IActionResult> Register(RegisterDto dto)
         {
-            // Only the two system roles are allowed
-            if (dto.Role != Roles.Organiser && dto.Role != Roles.Participant)
+            if (dto.Role != Roles.Participant)
             {
-                return BadRequest(new { message = "Role must be Organiser or Participant." });
+                return BadRequest(new { message = "Public registration can only create Participant accounts." });
             }
 
-            string email = dto.Email.Trim().ToLower();
+            return await CreateUserAsync(dto.FirstName, dto.LastName, dto.Email, dto.Password, dto.PhoneNumber, Roles.Participant);
+        }
+
+        /// <summary>
+        /// Registers an Organiser account using a server-side invite code.
+        /// </summary>
+        /// <param name="dto">Organiser account details without a client-supplied role.</param>
+        /// <param name="inviteCode">Invite code supplied in the X-Organiser-Invite-Code header.</param>
+        /// <response code="201">Organiser account successfully created.</response>
+        /// <response code="401">Invite code is missing or invalid.</response>
+        /// <response code="409">Conflict, email is already registered.</response>
+        [HttpPost("register-organiser")]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
+        public async Task<IActionResult> RegisterOrganiser(
+            OrganiserRegistrationDto dto,
+            [FromHeader(Name = "X-Organiser-Invite-Code")] string? inviteCode)
+        {
+            string? configuredInviteCode = _configuration["Authentication:OrganiserInviteCode"];
+            if (string.IsNullOrWhiteSpace(configuredInviteCode) || !CodesMatch(inviteCode, configuredInviteCode))
+            {
+                return Unauthorized(new { message = "A valid organiser invite code is required." });
+            }
+
+            return await CreateUserAsync(dto.FirstName, dto.LastName, dto.Email, dto.Password, dto.PhoneNumber, Roles.Organiser);
+        }
+
+        private async Task<IActionResult> CreateUserAsync(
+            string firstName,
+            string lastName,
+            string emailAddress,
+            string password,
+            string? phoneNumber,
+            string role)
+        {
+            string email = emailAddress.Trim().ToLowerInvariant();
 
             // Each email can only be registered once
             bool emailTaken = await _db.Users.AnyAsync(u => u.Email == email);
@@ -51,12 +90,12 @@ namespace RaceDay.API.Controllers
 
             var user = new User
             {
-                FirstName = dto.FirstName.Trim(),
-                LastName = dto.LastName.Trim(),
+                FirstName = firstName.Trim(),
+                LastName = lastName.Trim(),
                 Email = email,
-                PasswordHash = PasswordHelper.HashPassword(dto.Password),
-                PhoneNumber = dto.PhoneNumber,
-                Role = dto.Role
+                PasswordHash = PasswordHelper.HashPassword(password),
+                PhoneNumber = phoneNumber,
+                Role = role
             };
 
             _db.Users.Add(user);
@@ -70,6 +109,18 @@ namespace RaceDay.API.Controllers
                 email = user.Email,
                 role = user.Role
             });
+        }
+
+        private static bool CodesMatch(string? suppliedCode, string configuredCode)
+        {
+            if (string.IsNullOrEmpty(suppliedCode))
+            {
+                return false;
+            }
+
+            byte[] suppliedBytes = Encoding.UTF8.GetBytes(suppliedCode);
+            byte[] configuredBytes = Encoding.UTF8.GetBytes(configuredCode);
+            return CryptographicOperations.FixedTimeEquals(suppliedBytes, configuredBytes);
         }
 
         /// <summary>
