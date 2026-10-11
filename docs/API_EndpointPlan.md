@@ -32,7 +32,8 @@
 
 | HTTP Method | Route | Description | Role Required | Request Body | Expected Response |
 | --- | --- | --- | --- | --- | --- |
-| POST | `/api/auth/register` | Creates a new user account and assigns the role chosen at sign-up (Organiser or Participant). Hashes the password before saving. Exists so that both user types self-register through one endpoint. | None | `{ "firstName", "lastName", "email", "password", "confirmPassword", "phoneNumber", "role" }` — `phoneNumber` is optional. | `201 Created` — `{ userId, firstName, lastName, email, role }`. `400 Bad Request` — validation failed (weak password, passwords do not match, invalid role). `409 Conflict` — email already registered. |
+| POST | `/api/auth/register` | Creates a new Participant account. Public registration never accepts a client request to create an Organiser account. Hashes the password before saving. | None | `{ "firstName", "lastName", "email", "password", "confirmPassword", "phoneNumber", "role": "Participant" }` — `phoneNumber` is optional. | `201 Created` — `{ userId, firstName, lastName, email, role: "Participant" }`. `400 Bad Request` — validation failed or role is not `Participant`. `409 Conflict` — email already registered. |
+| POST | `/api/auth/register-organiser` | Creates an Organiser account only when the server-configured invite code is supplied. The role is assigned by the API and is not accepted in the request body. | None | Header `X-Organiser-Invite-Code`; body `{ "firstName", "lastName", "email", "password", "confirmPassword", "phoneNumber" }` — `phoneNumber` is optional. | `201 Created` — `{ userId, firstName, lastName, email, role: "Organiser" }`. `401 Unauthorized` — invite code missing or invalid. `409 Conflict` — email already registered. |
 | POST | `/api/auth/login` | Authenticates a user against the stored password hash and creates the server-side session holding `UserId` and `Role`. Exists as the single entry point to an authenticated state. | None | `{ "email", "password" }` | `200 OK` — `{ userId, fullName, role }` plus session cookie. `400 Bad Request` — missing fields. `401 Unauthorized` — invalid credentials. `403 Forbidden` — account deactivated. |
 | POST | `/api/auth/logout` | Clears the server-side session so the user is no longer authenticated. Exists to support the logout action in the Part 3 MVC front end. | Any | None | `200 OK` — `{ message: "Session ended." }`. `401 Unauthorized` — no active session. |
 | GET | `/api/auth/me` | Returns the identity and role held in the current session. Used by the MVC layer to build role-aware navigation without re-reading the database. | Any | None | `200 OK` — `{ userId, fullName, email, role }`. `401 Unauthorized` — no active session. |
@@ -113,13 +114,13 @@
 
 | Resource group | Endpoints |
 | --- | --- |
-| Authentication | 4 |
+| Authentication | 5 |
 | User Profile | 5 |
 | Events | 9 |
 | Categories | 5 |
 | Event Enrolments | 7 |
 | Results | 6 |
 | Supporting | 3 |
-| **Total** | **39** |
+| **Total** | **40** |
 
 Every functional requirement listed in Part 2 of the brief is covered: registration and login by role, profile view and update for both roles, full event CRUD for Organisers with read access for both roles, category definition and viewing, Participant enrolment by category with Organiser visibility of enrolments, and Organiser result capture with Participant result viewing.

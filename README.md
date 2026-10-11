@@ -10,13 +10,13 @@
 
 RaceDay is a web-based event management platform for South African road running, walking and cycling events.
 
-Part 2 delivers the full RESTful API built with ASP.NET Core Web API and Entity Framework Core, implementing all 39 endpoints planned in `docs/API_EndpointPlan.md`.
+Part 2 delivers the full RESTful API built with ASP.NET Core Web API and Entity Framework Core, implementing all 40 endpoints planned in `docs/API_EndpointPlan.md`.
 
 Key deliverables included in Part 2:
 - **ASP.NET Core Web API (`RaceDay.API`)**: Complete C# Web API project with EF Core Code-First data context (`RaceDayDbContext`).
 - **Authentication & Role Authorization**: Server-side session authentication (`ISession`) with secure PBKDF2 password hashing and strict Organiser vs Participant role enforcement.
 - **Swagger / OpenAPI Integration**: Full Swagger UI integration with XML documentation comments and annotated HTTP response status codes.
-- **Unit Testing Suite (`RaceDay.Tests`)**: Comprehensive xUnit test suite (38 unit tests) covering authentication, role rejection, event CRUD, category management, enrolment workflow, result processing, and API health.
+- **Unit Testing Suite (`RaceDay.Tests`)**: Comprehensive xUnit test suite (41 unit tests) covering authentication, role rejection, trusted Organiser registration, event CRUD, category management, enrolment workflow, result processing, and API health.
 - **Automated CI/CD**: GitHub Actions workflow (`.github/workflows/ci.yml`) automatically restoring, building, and executing unit tests on every push.
 
 ---
@@ -28,7 +28,7 @@ Key deliverables included in Part 2:
 
 | Role            | What the role can do                                                                                                                                                                                                                                                                                                                               |
 | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Organiser**   | Register and log in. Create, edit and delete their own events (name, description, date, location, distance, event type). Define categories per event (name, description, entry fee, age range). View enrolments for their events, confirm or cancel enrolments, and capture finish times and finishing positions. Upload an event banner (Part 3). |
+| **Organiser**   | Register through the trusted invite-code endpoint and log in. Create, edit and delete their own events (name, description, date, location, distance, event type). Define categories per event (name, description, entry fee, age range). View enrolments for their events, confirm or cancel enrolments, and capture finish times and finishing positions. Upload an event banner (Part 3). |
 | **Participant** | Register and log in. Browse and view events with categories. Enter an event by selecting a category. View and update their own enrolments (withdraw or change category before race day). View personal race history (finish time and finishing position). Update their profile and upload a profile picture (Part 3).                              |
 
 
@@ -58,7 +58,7 @@ Both roles are stored in one `Users` table using a `Role` column (`Organiser` or
 │   ├── Helpers/                      Password Hashing (PBKDF2), Image Uploads, & Role Constants
 │   ├── Models/                       EF Core Entity Models
 │   └── Program.cs                    Middleware, Session, and Swagger Configuration
-├── RaceDay.Tests/                    xUnit Unit Test Suite (37 Unit Tests)
+├── RaceDay.Tests/                    xUnit Unit Test Suite (41 Unit Tests)
 │   ├── Controllers/                  Unit tests for all controllers
 │   └── TestHelpers/                  In-Memory DbContext factory & TestSession mock
 ├── RaceDay.sln                       Visual Studio Solution file
@@ -275,15 +275,25 @@ dotnet run --project RaceDay.API
 ```
 The API will launch at `https://localhost:7043` or `http://localhost:5248`.
 
+Public registration creates Participant accounts only. To create a trusted Organiser account, provide the invite code through configuration before starting the API. Do not commit the code to `appsettings.json`:
+
+PowerShell:
+```powershell
+$env:Authentication__OrganiserInviteCode = "your-private-invite-code"
+dotnet run --project RaceDay.API
+```
+
+The organiser registration endpoint expects this value in the `X-Organiser-Invite-Code` header.
+
 ### 3. Open Swagger UI
 Once running, open your web browser and navigate to:
 ```
 https://localhost:7043/swagger
 ```
-All 39 endpoints are interactive, documented with XML comments, input schemas, and expected HTTP status codes (`200`, `201`, `400`, `401`, `403`, `404`, `409`).
+All 40 endpoints are interactive, documented with XML comments, input schemas, and expected HTTP status codes (`200`, `201`, `400`, `401`, `403`, `404`, `409`).
 
 ### 4. Execute Unit Tests
-To run the automated xUnit test suite (38 unit tests covering Auth, Role Authorization, Events, Categories, Enrolments, Results, and API health):
+To run the automated xUnit test suite (41 unit tests covering Auth, Role Authorization, trusted Organiser registration, Events, Categories, Enrolments, Results, and API health):
 ```bash
 dotnet test
 ```
