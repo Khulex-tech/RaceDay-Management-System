@@ -1,24 +1,23 @@
 # RaceDay - Event Management System for South African Road Events
 
 **Module:** PROG6212 - Programming 2B  
-**Portfolio of Evidence - Part 1: System Planning and Database**  
+**Portfolio of Evidence - Part 2: RESTful API Development**  
 **Repository:** RaceDay-Management-System
 
 ---
 
 ## 1. Project Overview
 
-RaceDay is a web-based event management platform for South African road running, walking and cycling events. A lot of local races are still run with paper forms, spreadsheets and WhatsApp groups, so this project plans a proper system for organisers and participants.
+RaceDay is a web-based event management platform for South African road running, walking and cycling events.
 
-Part 1 is planning and database work only. It covers:
+Part 2 delivers the full RESTful API built with ASP.NET Core Web API and Entity Framework Core, implementing all 39 endpoints planned in `docs/API_EndpointPlan.md`.
 
-- the system roles and how the app should work
-- the Entity Relationship Diagram (ERD)
-- the API endpoint plan for Part 2
-- the SQL Server database script
-- GitHub Actions checks for the Part 1 deliverables
-
-No ASP.NET Core API or MVC front end has been built yet. That comes in Parts 2 and 3.
+Key deliverables included in Part 2:
+- **ASP.NET Core Web API (`RaceDay.API`)**: Complete C# Web API project with EF Core Code-First data context (`RaceDayDbContext`).
+- **Authentication & Role Authorization**: Server-side session authentication (`ISession`) with secure PBKDF2 password hashing and strict Organiser vs Participant role enforcement.
+- **Swagger / OpenAPI Integration**: Full Swagger UI integration with XML documentation comments and annotated HTTP response status codes.
+- **Unit Testing Suite (`RaceDay.Tests`)**: Comprehensive xUnit test suite (37 unit tests) covering authentication, role rejection, event CRUD, category management, enrolment workflow, and result processing.
+- **Automated CI/CD**: GitHub Actions workflow (`.github/workflows/ci.yml`) automatically restoring, building, and executing unit tests on every push.
 
 ---
 
@@ -39,28 +38,33 @@ Both roles are stored in one `Users` table using a `Role` column (`Organiser` or
 
 
 
-## 3. Repository structure (`/docs` deliverables)
+## 3. Repository Structure
 
 ```
 .
 ├── .github/
 │   └── workflows/
-│       └── part1.yml                 CI workflow that validates Part 1 deliverables
+│       ├── ci.yml                    Part 2 CI workflow (Restores, builds, and runs xUnit tests)
+│       └── part1.yml                 Part 1 static check workflow
 ├── docs/
 │   ├── RACEDAYERD.png                Section A — ERD (PNG)
 │   ├── API_EndpointPlan.md           Section B — API endpoint plan (Markdown)
 │   ├── RaceDay_DatabaseScript.sql    Section C — SQL Server schema + seed data
 │   └── SUCCESSFUL-CI.png             Screenshot of a successful CI run
+├── RaceDay.API/                      ASP.NET Core Web API Project
+│   ├── Controllers/                  API Controllers (Auth, Users, Events, Categories, Enrolments, Results, Support)
+│   ├── Data/                         RaceDayDbContext & Data Seeder
+│   ├── Dtos/                         Request/Response Data Transfer Objects
+│   ├── Helpers/                      Password Hashing (PBKDF2), Image Uploads, & Role Constants
+│   ├── Models/                       EF Core Entity Models
+│   └── Program.cs                    Middleware, Session, and Swagger Configuration
+├── RaceDay.Tests/                    xUnit Unit Test Suite (37 Unit Tests)
+│   ├── Controllers/                  Unit tests for all controllers
+│   └── TestHelpers/                  In-Memory DbContext factory & TestSession mock
+├── RaceDay.sln                       Visual Studio Solution file
 ├── LICENSE
 └── README.md
 ```
-
-
-| Brief section | Requirement                                 | File in this repo                                                    |
-| ------------- | ------------------------------------------- | -------------------------------------------------------------------- |
-| **Section A** | ERD as PNG or PDF in `/docs`                | `[docs/RACEDAYERD.png](docs/RACEDAYERD.png)`                         |
-| **Section B** | Endpoint plan as PDF or Markdown in `/docs` | `[docs/API_EndpointPlan.md](docs/API_EndpointPlan.md)`               |
-| **Section C** | `.sql` script in `/docs`                    | `[docs/RaceDay_DatabaseScript.sql](docs/RaceDay_DatabaseScript.sql)` |
 
 
 ---
@@ -246,32 +250,56 @@ It checks that:
 - the SQL script contains `CREATE TABLE` for all six entities, plus `PRIMARY KEY`, `FOREIGN KEY`, `NOT NULL`, `UNIQUE`, `DEFAULT`, `CHECK` and seed `INSERT` statements;
 - the README includes Project Overview, System Roles and CI/CD.
 
-Screenshot of a successful Part 1 CI run:
+Screenshot of a successful CI run:
 
 ![](docs/SUCCESSFUL-CI.png)
 
 ---
 
+## 9. How to Run the Part 2 RESTful API & Unit Tests
 
+### Prerequisites
+- .NET 8.0 SDK
+- SQL Server (LocalDB or SSMS instance `RaceDayDb`)
 
-## 9. GitHub and version control
+### 1. Database Setup
+Run `docs/RaceDay_DatabaseScript.sql` in SSMS or execute:
+```bash
+sqlcmd -S "(localdb)\MSSQLLocalDB" -i "docs/RaceDay_DatabaseScript.sql"
+```
 
-This repository is hosted on GitHub as **RaceDay-Management-System**.
+### 2. Run the Web API
+Navigate to the root directory and start the API:
+```bash
+dotnet run --project RaceDay.API
+```
+The API will launch at `https://localhost:7043` or `http://localhost:5248`.
 
-Part 1 work is meant to show planning progress through normal commits (ERD, endpoint plan, SQL script, README and CI updates). The brief expects a meaningful commit history (20+ commits across the portfolio). Commits should describe real changes, not empty or junk messages.
+### 3. Open Swagger UI
+Once running, open your web browser and navigate to:
+```
+https://localhost:7043/swagger
+```
+All 39 endpoints are interactive, documented with XML comments, input schemas, and expected HTTP status codes (`200`, `201`, `400`, `401`, `403`, `404`, `409`).
+
+### 4. Execute Unit Tests
+To run the automated xUnit test suite (37 unit tests covering Auth, Role Authorization, Events, Categories, Enrolments, and Results):
+```bash
+dotnet test
+```
 
 ---
 
+## 10. Video Presentation
 
+- **YouTube Video Walkthrough**: [Link to Unlisted YouTube Video Presentation] *(Add your YouTube link here)*
 
-## 10. Next steps
-
-
-| Part       | Focus                                                                                |
-| ---------- | ------------------------------------------------------------------------------------ |
-| **Part 2** | ASP.NET Core Web API implementing `API_EndpointPlan.md` against `RaceDayDb`          |
-| **Part 3** | MVC front end, file uploads (profile picture and event banner), and Docker packaging |
-
+The video presentation demonstrates:
+1. Running ASP.NET Core Web API and database connectivity.
+2. Server-side session authentication and role enforcement (`Organiser` vs `Participant`).
+3. Interactive Swagger UI endpoint testing.
+4. Local execution of the xUnit unit test suite.
+5. GitHub repository commit history and CI/CD workflow build status.
 
 ---
 
@@ -279,4 +307,4 @@ Part 1 work is meant to show planning progress through normal commits (ERD, endp
 
 **Name:** Thapelo Mkhari (Khulex-tech)  
 **Module:** PROG6212 - Programming 2B  
-**Part:** 1 of 3 - System Planning and Database
+**Part:** 2 of 3 - RESTful API Development
