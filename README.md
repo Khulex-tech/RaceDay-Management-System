@@ -300,20 +300,7 @@ dotnet test
 
 ---
 
-## 10. Video Presentation
-
-- **YouTube Video Walkthrough**: [Link to Unlisted YouTube Video Presentation] *(Add your YouTube link here)*
-
-The video presentation demonstrates:
-1. Running ASP.NET Core Web API and database connectivity.
-2. Server-side session authentication and role enforcement (`Organiser` vs `Participant`).
-3. Interactive Swagger UI endpoint testing.
-4. Local execution of the xUnit unit test suite.
-5. GitHub repository commit history and CI/CD workflow build status.
-
----
-
-## 11. Author
+## 10. Author
 
 **Name:** Thapelo Mkhari (Khulex-tech)  
 **Module:** PROG6212 - Programming 2B  
