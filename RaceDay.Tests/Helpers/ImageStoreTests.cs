@@ -6,6 +6,16 @@ namespace RaceDay.Tests.Helpers
 {
     public class ImageStoreTests
     {
+        [Theory]
+        [InlineData("")]
+        [InlineData("not a URL")]
+        [InlineData("https://private.example/image.png")]
+        public async Task OpenAsync_WithoutStorage_ReturnsMissing(string url)
+        {
+            var store = new AzureBlobImageStore(new ConfigurationBuilder().Build());
+            Assert.Null(await store.OpenAsync(url));
+        }
+
         [Fact]
         public async Task SaveAsync_WithoutAConnectionString_DoesNotThrow()
         {
