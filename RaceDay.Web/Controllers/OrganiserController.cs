@@ -70,6 +70,11 @@ namespace RaceDay.Web.Controllers
         [HttpGet("events/{id:int}/edit")]
         public async Task<IActionResult> Edit(int id)
         {
+            if (!await OwnsEventAsync(id))
+            {
+                return RedirectToAction(nameof(Events));
+            }
+
             var ev = await Api.GetEventAsync(id);
             if (!ev.Success || ev.Data == null)
             {
@@ -94,6 +99,11 @@ namespace RaceDay.Web.Controllers
         [HttpPost("events/{id:int}/edit")]
         public async Task<IActionResult> Edit(int id, EventForm form)
         {
+            if (!await OwnsEventAsync(id))
+            {
+                return RedirectToAction(nameof(Events));
+            }
+
             if (!ModelState.IsValid)
             {
                 await LoadTypesAsync();
@@ -116,6 +126,11 @@ namespace RaceDay.Web.Controllers
         [HttpPost("events/{id:int}/delete")]
         public async Task<IActionResult> Delete(int id)
         {
+            if (!await OwnsEventAsync(id))
+            {
+                return RedirectToAction(nameof(Events));
+            }
+
             var result = await Api.DeleteEventAsync(id);
             if (Succeeded(result))
             {
@@ -128,6 +143,11 @@ namespace RaceDay.Web.Controllers
         [HttpPost("events/{id:int}/banner")]
         public async Task<IActionResult> Banner(int id, IFormFile? file)
         {
+            if (!await OwnsEventAsync(id))
+            {
+                return RedirectToAction(nameof(Events));
+            }
+
             if (file == null || file.Length == 0)
             {
                 NoteError("Choose a JPG or PNG banner.");

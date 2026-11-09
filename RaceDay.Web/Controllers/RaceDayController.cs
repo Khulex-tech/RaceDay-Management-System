@@ -35,6 +35,18 @@ namespace RaceDay.Web.Controllers
             TempData["Success"] = message;
         }
 
+        protected async Task<bool> OwnsEventAsync(int eventId)
+        {
+            var ev = await Api.GetEventAsync(eventId);
+            if (ev.Success && ev.Data?.Organiser != null && ev.Data.Organiser.UserId == CurrentUserId)
+            {
+                return true;
+            }
+
+            NoteError("You can only manage your own events.");
+            return false;
+        }
+
         protected bool Succeeded<T>(ApiResponse<T> response)
         {
             if (response.Success)

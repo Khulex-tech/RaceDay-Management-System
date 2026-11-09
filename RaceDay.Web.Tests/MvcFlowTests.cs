@@ -63,6 +63,16 @@ namespace RaceDay.Web.Tests
         }
 
         [Fact]
+        public async Task OtherOrganiser_CannotOpenSomeoneElsesEvent()
+        {
+            using var client = CreateClient();
+            await LoginAsync(client, "other@raceday.test");
+            var response = await client.GetAsync("/organiser/events/3/edit");
+            Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+            Assert.Equal("/organiser/events", response.Headers.Location?.OriginalString);
+        }
+
+        [Fact]
         public async Task Logout_ClearsAccessToProtectedPages()
         {
             using var client = CreateClient();
@@ -110,17 +120,6 @@ namespace RaceDay.Web.Tests
 
         private sealed class ScriptedApi : IRaceDayApi
         {
-            public Task<ApiResponse<LoginResult>> LoginAsync(string email, string password)
-            {
-                bool organiser = email.Contains("organiser", StringComparison.OrdinalIgnoreCase);
-                return Task.FromResult(ApiResponse<LoginResult>.Ok(200, new LoginResult
-                {
-                    UserId = organiser ? 1 : 2,
-                    FullName = organiser ? "Thabo Mokoena" : "Sipho Ndlovu",
-                    Role = organiser ? "Organiser" : "Participant"
-                }));
-            }
-
             public Task<ApiResponse<PagedEvents>> GetEventsAsync(string? eventType, string? search, DateTime? fromDate, DateTime? toDate, int page, int pageSize)
             {
                 return Task.FromResult(ApiResponse<PagedEvents>.Ok(200, new PagedEvents
@@ -169,7 +168,25 @@ namespace RaceDay.Web.Tests
             public Task<ApiResponse<object>> LogoutAsync() => Task.FromResult(ApiResponse<object>.Ok(200, null));
             public Task<ApiResponse<RegisterResult>> RegisterParticipantAsync(RegisterForm form) => Task.FromResult(ApiResponse<RegisterResult>.Ok(201, new RegisterResult()));
             public Task<ApiResponse<RegisterResult>> RegisterOrganiserAsync(RegisterForm form, string inviteCode) => Task.FromResult(ApiResponse<RegisterResult>.Ok(201, new RegisterResult()));
-            public Task<ApiResponse<EventDetail>> GetEventAsync(int id) => Task.FromResult(ApiResponse<EventDetail>.Ok(200, new EventDetail { EventId = id, Name = "Event", EventType = "Run" }));
+            public Task<ApiResponse<LoginResult>> LoginAsync(string email, string password)
+            {
+                bool organiser = email.Contains("organiser", StringComparison.OrdinalIgnoreCase);
+                bool other = email.Contains("other", StringComparison.OrdinalIgnoreCase);
+                return Task.FromResult(ApiResponse<LoginResult>.Ok(200, new LoginResult
+                {
+                    UserId = other ? 9 : organiser ? 1 : 2,
+                    FullName = other ? "Ayesha Patel" : organiser ? "Thabo Mokoena" : "Sipho Ndlovu",
+                    Role = organiser || other ? "Organiser" : "Participant"
+                }));
+            }
+
+            public Task<ApiResponse<EventDetail>> GetEventAsync(int id) => Task.FromResult(ApiResponse<EventDetail>.Ok(200, new EventDetail
+            {
+                EventId = id,
+                Name = "Event",
+                EventType = "Run",
+                Organiser = new PersonRef { UserId = 1, FullName = "Thabo Mokoena" }
+            }));
             public Task<ApiResponse<RacePrep>> GetRacePrepAsync(int id) => Task.FromResult(ApiResponse<RacePrep>.Ok(200, new RacePrep()));
             public Task<ApiResponse<SavedEvent>> CreateEventAsync(EventForm form) => Task.FromResult(ApiResponse<SavedEvent>.Ok(201, new SavedEvent { EventId = 9 }));
             public Task<ApiResponse<SavedEvent>> UpdateEventAsync(int id, EventForm form) => Task.FromResult(ApiResponse<SavedEvent>.Ok(200, new SavedEvent { EventId = id }));

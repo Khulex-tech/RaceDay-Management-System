@@ -16,6 +16,11 @@ namespace RaceDay.Web.Controllers
         [HttpGet("")]
         public async Task<IActionResult> Index(int eventId)
         {
+            if (!await OwnsEventAsync(eventId))
+            {
+                return Redirect("/organiser/events");
+            }
+
             var ev = await Api.GetEventAsync(eventId);
             if (!ev.Success || ev.Data == null)
             {
