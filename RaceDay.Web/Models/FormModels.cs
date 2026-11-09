@@ -152,6 +152,12 @@ namespace RaceDay.Web.Models
         public int Position { get; set; }
     }
 
+    public class ProfilePage
+    {
+        public ProfileForm Details { get; set; } = new();
+        public PasswordForm Password { get; set; } = new();
+    }
+
     public class HomeFilter
     {
         public string? EventType { get; set; }
