@@ -18,8 +18,9 @@ namespace RaceDay.Web.Helpers
                 };
             }
 
-            string finishers = totalFinishers == 1 ? "finisher" : "finishers";
-            return $"{position}{suffix} out of {totalFinishers} {finishers}";
+            // totalFinishers is how many results have been saved, not the size of the race.
+            string recorded = totalFinishers == 1 ? "1 result on file" : $"{totalFinishers} results on file";
+            return $"{position}{suffix} recorded. {recorded}.";
         }
     }
 }
