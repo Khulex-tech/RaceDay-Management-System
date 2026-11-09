@@ -1,0 +1,91 @@
+@model List<EventEnrolmentRow>
+@{
+    ViewData["Title"] = "Enrolments";
+    int eventId = (int)ViewBag.EventId;
+    string eventName = ViewBag.EventName as string ?? "Event";
+    string? status = ViewBag.Status as string;
+}
+<div class="page-head">
+    <div>
+        <h1>Enrolments</h1>
+        <p class="muted">@eventName</p>
+    </div>
+    <a class="btn btn-quiet" href="/organiser/events">Back to events</a>
+</div>
+<form method="get" class="filters">
+    <label for="status">Status</label>
+    <div class="inline-form">
+        <select id="status" name="status">
+            <option value="">All</option>
+            @foreach (var choice in new[] { "Pending", "Confirmed", "Cancelled" })
+            {
+                if (status == choice)
+                {
+                    <option value="@choice" selected>@choice</option>
+                }
+                else
+                {
+                    <option value="@choice">@choice</option>
+                }
+            }
+        </select>
+        <button class="btn" type="submit">Filter</button>
+    </div>
+</form>
+@if (Model.Count == 0)
+{
+    <section class="empty-state">
+        <h2>No enrolments to show</h2>
+        <p class="muted">Participants appear here after they choose a category.</p>
+    </section>
+}
+else
+{
+    <div class="panel">
+        <div class="table-wrap">
+            <table>
+                <caption>Participants entered in @eventName</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Participant</th>
+                        <th scope="col">Category</th>
+                        <th scope="col">Entered</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Update</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in Model)
+                    {
+                        <tr>
+                            <td>@(row.Participant?.FullName ?? "Participant")</td>
+                            <td>@row.CategoryName</td>
+                            <td>@row.EnrolledAt.ToString("d MMM yyyy")</td>
+                            <td><partial name="_Status" model="row.Status" /></td>
+                            <td>
+                                <form method="post" action="/organiser/events/@eventId/enrolments/@row.EnrolmentId/status" class="inline-form">
+                                    @Html.AntiForgeryToken()
+                                    <label class="visually-hidden" for="status-@row.EnrolmentId">New status</label>
+                                    <select id="status-@row.EnrolmentId" name="status">
+                                        @foreach (var choice in new[] { "Pending", "Confirmed", "Cancelled" })
+                                        {
+                                            if (row.Status == choice)
+                                            {
+                                                <option selected>@choice</option>
+                                            }
+                                            else
+                                            {
+                                                <option>@choice</option>
+                                            }
+                                        }
+                                    </select>
+                                    <button class="btn btn-quiet" type="submit">Save</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
