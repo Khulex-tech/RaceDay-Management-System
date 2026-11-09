@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 280" role="img" aria-label="Road rising toward a start banner">
+  <rect width="960" height="280" fill="#123D32"/>
+  <circle cx="790" cy="70" r="36" fill="#F4C430"/>
+  <path d="M0 210 C 220 120, 420 250, 640 150 C 760 110, 860 140, 960 90 L 960 280 L 0 280 Z" fill="#0B3D2E"/>
+  <path d="M80 250 C 260 160, 430 250, 620 170 C 740 130, 840 160, 930 120" fill="none" stroke="#F7F4EF" stroke-width="10" stroke-linecap="round"/>
+  <path d="M140 230 C 280 170, 400 230, 560 180" fill="none" stroke="#F4C430" stroke-width="4" stroke-dasharray="16 14" stroke-linecap="round"/>
+  <rect x="70" y="78" width="150" height="18" rx="3" fill="#F4C430"/>
+  <path d="M70 96 V150 M220 96 V150" stroke="#F7F4EF" stroke-width="4"/>
+</svg>

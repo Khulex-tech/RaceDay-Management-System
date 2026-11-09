@@ -1,0 +1,78 @@
+﻿@using Microsoft.AspNetCore.Http
+@{
+    var role = Context.Session.GetString("Role");
+    var name = Context.Session.GetString("FullName");
+    var path = Context.Request.Path.Value ?? "/";
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] - RaceDay</title>
+    <link rel="icon" href="~/images/mark.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="site-header">
+        <div class="header-inner">
+            <a class="brand" href="/">
+                <img src="~/images/mark.svg" alt="" />
+                <span>
+                    <span class="brand-name">RaceDay</span>
+                    <small>South African road events</small>
+                </span>
+            </a>
+            <button class="nav-toggle" id="navToggle" type="button" aria-expanded="false" aria-controls="primaryNav">Menu</button>
+            <nav id="primaryNav" class="primary-nav" aria-label="Primary">
+                <a href="/" aria-current="@(path == "/" ? "page" : null)">Home</a>
+                @if (role == "Organiser")
+                {
+                    <a href="/organiser">Dashboard</a>
+                    <a href="/organiser/events">Manage events</a>
+                }
+                @if (role == "Participant")
+                {
+                    <a href="/MyEvents">My Events</a>
+                    <a href="/MyResults">My Results</a>
+                }
+                @if (role == null)
+                {
+                    <a href="/Account/Login">Log in</a>
+                    <a href="/Account/Register">Register</a>
+                }
+                else
+                {
+                    <a href="/Profile">Profile</a>
+                    <span class="nav-user">@name</span>
+                    <form method="post" action="/Account/Logout" class="inline-form">
+                        @Html.AntiForgeryToken()
+                        <button class="btn btn-gold" type="submit">Log out</button>
+                    </form>
+                }
+            </nav>
+        </div>
+    </header>
+    <main id="main" class="page">
+        @if (TempData["Error"] is string error)
+        {
+            <div class="banner banner-error" role="alert">@error</div>
+        }
+        @if (TempData["Success"] is string success)
+        {
+            <div class="banner banner-success" role="status">@success</div>
+        }
+        @RenderBody()
+    </main>
+    <footer class="site-footer">
+        RaceDay helps organisers and participants run road races, walks and cycle events.
+    </footer>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
