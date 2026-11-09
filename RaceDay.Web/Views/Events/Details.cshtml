@@ -1,0 +1,130 @@
+@model EventDetail
+@{
+    ViewData["Title"] = Model.Name;
+    var prep = ViewBag.Prep as RacePrep;
+    var role = Context.Session.GetString("Role");
+    bool upcoming = Model.EventDate > DateTime.Now;
+}
+<div class="page-head">
+    <div>
+        <h1>@Model.Name</h1>
+        <p class="muted">@Model.EventDate.ToString("dddd, d MMMM yyyy 'at' HH:mm") · Organised by @(Model.Organiser?.FullName ?? "RaceDay")</p>
+    </div>
+    <a class="btn btn-quiet" href="/">Back to events</a>
+</div>
+@if (!string.IsNullOrWhiteSpace(Model.BannerImageUrl))
+{
+    <img class="detail-banner" src="@Model.BannerImageUrl" alt="Banner for @Model.Name" />
+}
+else
+{
+    <img class="detail-banner" src="~/images/road.svg" alt="Illustrated road for events without a banner yet" />
+}
+<div class="split" style="margin-top:1rem;">
+    <section class="panel">
+        <div class="meta">
+            <span class="chip">@Model.EventType</span>
+            <span class="chip">@Model.DistanceKm.ToString("0.##") km</span>
+            <span class="chip">@Model.Location</span>
+        </div>
+        <p>@Model.Description</p>
+        <h2>Categories</h2>
+        @if (Model.Categories.Count == 0)
+        {
+            <p class="muted">No categories have been published for this event yet.</p>
+        }
+        else
+        {
+            <div class="table-wrap">
+                <table>
+                    <caption>Ways to enter @Model.Name</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">Category</th>
+                            <th scope="col">Ages</th>
+                            <th scope="col">Fee</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var category in Model.Categories)
+                        {
+                            <tr>
+                                <td>
+                                    <strong>@category.CategoryName</strong>
+                                    <div class="muted">@category.Description</div>
+                                </td>
+                                <td>@category.MinAge–@category.MaxAge</td>
+                                <td>R @category.EntryFee.ToString("0.00")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        @if (role == "Participant" && upcoming && Model.Categories.Count > 0)
+        {
+            <h2>Enter this event</h2>
+            <form method="post" action="/Events/Enter" class="actions">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="EventId" value="@Model.EventId" />
+                <label for="categoryId" class="visually-hidden">Category</label>
+                <select id="categoryId" name="CategoryId" required style="max-width:280px;">
+                    <option value="">Choose a category</option>
+                    @foreach (var category in Model.Categories)
+                    {
+                        <option value="@category.CategoryId">@category.CategoryName</option>
+                    }
+                </select>
+                <button class="btn" type="submit">Enter event</button>
+            </form>
+        }
+        else if (role == null && upcoming)
+        {
+            <p><a href="/Account/Login?returnUrl=/Events/Details/@Model.EventId">Log in as a participant</a> to enter this event.</p>
+        }
+        else if (!upcoming)
+        {
+            <p class="muted">Entries are closed because this event has already taken place.</p>
+        }
+    </section>
+    <aside>
+        <section class="panel" style="margin-bottom:1rem;">
+            <h2>Route</h2>
+            @if (prep?.Route == null)
+            {
+                <p class="muted">@(ViewBag.PrepError ?? "Route details are not available.")</p>
+            }
+            else
+            {
+                <p>@prep.Route.Summary</p>
+                <p><strong>Start:</strong> @prep.Route.StartLocation</p>
+                @if (prep.Route.Options.Count > 0)
+                {
+                    <ul>
+                        @foreach (var option in prep.Route.Options)
+                        {
+                            <li><strong>@option.Name.</strong> @option.Description</li>
+                        }
+                    </ul>
+                }
+            }
+        </section>
+        <section class="panel">
+            <h2>Weather at the start</h2>
+            @if (prep?.Weather == null)
+            {
+                <p class="muted">@(ViewBag.PrepError ?? "Weather is not available.")</p>
+            }
+            else if (!prep.Weather.Available)
+            {
+                <p class="muted">@prep.Weather.Message</p>
+            }
+            else
+            {
+                <p><strong>@prep.Weather.Conditions</strong> · @prep.Weather.TemperatureC?.ToString("0.0") °C</p>
+                <p class="muted">Wind @prep.Weather.WindKmh?.ToString("0") km/h near @prep.Weather.LocationName.</p>
+                <p class="muted">@prep.Weather.Note Source: @prep.Weather.Source.</p>
+            }
+        </section>
+    </aside>
+</div>
