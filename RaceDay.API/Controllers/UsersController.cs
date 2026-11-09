@@ -14,12 +14,12 @@ namespace RaceDay.API.Controllers
     public class UsersController : BaseApiController
     {
         private readonly RaceDayDbContext _db;
-        private readonly IWebHostEnvironment _env;
+        private readonly IImageStore _images;
 
-        public UsersController(RaceDayDbContext db, IWebHostEnvironment env)
+        public UsersController(RaceDayDbContext db, IImageStore images)
         {
             _db = db;
-            _env = env;
+            _images = images;
         }
 
         /// <summary>
@@ -141,7 +141,13 @@ namespace RaceDay.API.Controllers
                 return BadRequest(new { message = error });
             }
 
-            user.ProfilePictureUrl = await ImageUploadHelper.SaveAsync(file!, _env.WebRootPath);
+            ImageSaveResult saved = await _images.SaveAsync(file!);
+            if (!saved.Success || saved.Url == null)
+            {
+                return StatusCode(StatusCodes.Status503ServiceUnavailable, new { message = saved.Error });
+            }
+
+            user.ProfilePictureUrl = saved.Url;
             await _db.SaveChangesAsync();
 
             return Ok(new { profilePictureUrl = user.ProfilePictureUrl });

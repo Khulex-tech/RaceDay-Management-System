@@ -1,6 +1,5 @@
-using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Moq;
 using RaceDay.API.Controllers;
 using RaceDay.API.Dtos;
 using RaceDay.API.Helpers;
@@ -15,8 +14,6 @@ namespace RaceDay.Tests.Controllers
      */
     public class EventControllerTests
     {
-        private readonly Mock<IWebHostEnvironment> _mockEnv = new();
-
         [Fact]
         public async Task GetEvents_ReturnsFilteredEvents()
         {
@@ -46,7 +43,7 @@ namespace RaceDay.Tests.Controllers
             );
             await db.SaveChangesAsync();
 
-            var controller = new EventsController(db, _mockEnv.Object).WithSession();
+            var controller = new EventsController(db, new FakeImageStore()).WithSession();
 
             // Act
             var result = await controller.GetEvents(eventType: "Run", fromDate: null, toDate: null, search: "Soweto", page: 1, pageSize: 10);
@@ -78,7 +75,7 @@ namespace RaceDay.Tests.Controllers
             db.Events.Add(ev);
             await db.SaveChangesAsync();
 
-            var controller = new EventsController(db, _mockEnv.Object).WithSession();
+            var controller = new EventsController(db, new FakeImageStore()).WithSession();
 
             // Act
             var result = await controller.GetEvent(ev.EventId);
@@ -93,7 +90,7 @@ namespace RaceDay.Tests.Controllers
         {
             // Arrange
             var db = TestDbContextFactory.CreateDbContext(nameof(GetEvent_NonExistingId_Returns404NotFound));
-            var controller = new EventsController(db, _mockEnv.Object).WithSession();
+            var controller = new EventsController(db, new FakeImageStore()).WithSession();
 
             // Act
             var result = await controller.GetEvent(999);
@@ -108,7 +105,7 @@ namespace RaceDay.Tests.Controllers
         {
             // Arrange
             var db = TestDbContextFactory.CreateDbContext(nameof(CreateEvent_OrganiserRole_Returns201Created));
-            var controller = new EventsController(db, _mockEnv.Object).WithSession(userId: 1, role: Roles.Organiser);
+            var controller = new EventsController(db, new FakeImageStore()).WithSession(userId: 1, role: Roles.Organiser);
 
             var dto = new EventRequestDto
             {
@@ -134,7 +131,7 @@ namespace RaceDay.Tests.Controllers
         {
             // Arrange
             var db = TestDbContextFactory.CreateDbContext(nameof(CreateEvent_ParticipantRole_Returns403Forbidden));
-            var controller = new EventsController(db, _mockEnv.Object).WithSession(userId: 2, role: Roles.Participant);
+            var controller = new EventsController(db, new FakeImageStore()).WithSession(userId: 2, role: Roles.Participant);
 
             var dto = new EventRequestDto
             {
@@ -159,7 +156,7 @@ namespace RaceDay.Tests.Controllers
         {
             // Arrange
             var db = TestDbContextFactory.CreateDbContext(nameof(CreateEvent_PastDate_Returns400BadRequest));
-            var controller = new EventsController(db, _mockEnv.Object).WithSession(userId: 1, role: Roles.Organiser);
+            var controller = new EventsController(db, new FakeImageStore()).WithSession(userId: 1, role: Roles.Organiser);
 
             var dto = new EventRequestDto
             {
@@ -197,7 +194,7 @@ namespace RaceDay.Tests.Controllers
             db.Events.Add(ev);
             await db.SaveChangesAsync();
 
-            var controller = new EventsController(db, _mockEnv.Object).WithSession(userId: 1, role: Roles.Organiser);
+            var controller = new EventsController(db, new FakeImageStore()).WithSession(userId: 1, role: Roles.Organiser);
             var updateDto = new EventRequestDto
             {
                 Name = "Updated Name",
@@ -238,7 +235,7 @@ namespace RaceDay.Tests.Controllers
             await db.SaveChangesAsync();
 
             // Logged in as Organiser UserId 2 (Ayesha)
-            var controller = new EventsController(db, _mockEnv.Object).WithSession(userId: 2, role: Roles.Organiser);
+            var controller = new EventsController(db, new FakeImageStore()).WithSession(userId: 2, role: Roles.Organiser);
             var updateDto = new EventRequestDto
             {
                 Name = "Attempted Hijack",
@@ -284,7 +281,7 @@ namespace RaceDay.Tests.Controllers
             });
             await db.SaveChangesAsync();
 
-            var controller = new EventsController(db, _mockEnv.Object).WithSession(userId: 1, role: Roles.Organiser);
+            var controller = new EventsController(db, new FakeImageStore()).WithSession(userId: 1, role: Roles.Organiser);
 
             // Act
             var result = await controller.DeleteEvent(ev.EventId);
@@ -292,6 +289,38 @@ namespace RaceDay.Tests.Controllers
             // Assert
             var conflict = Assert.IsType<ConflictObjectResult>(result);
             Assert.Equal(409, conflict.StatusCode);
+        }
+
+        [Fact]
+        public async Task UploadBanner_StoresTheUrlReturnedByTheImageStore()
+        {
+            var db = TestDbContextFactory.CreateDbContext(nameof(UploadBanner_StoresTheUrlReturnedByTheImageStore));
+            var ev = new Event
+            {
+                OrganiserId = 1,
+                EventTypeId = 1,
+                Name = "Banner Event",
+                Description = "Needs a banner",
+                EventDate = DateTime.Now.AddDays(20),
+                Location = "Pretoria",
+                DistanceKm = 10m
+            };
+            db.Events.Add(ev);
+            await db.SaveChangesAsync();
+
+            var bytes = new byte[] { 1, 2, 3, 4 };
+            await using var stream = new MemoryStream(bytes);
+            IFormFile file = new FormFile(stream, 0, bytes.Length, "file", "start.png")
+            {
+                Headers = new HeaderDictionary(),
+                ContentType = "image/png"
+            };
+
+            var controller = new EventsController(db, new FakeImageStore()).WithSession(userId: 1, role: Roles.Organiser);
+            var result = await controller.UploadBanner(ev.EventId, file);
+
+            Assert.IsType<OkObjectResult>(result);
+            Assert.Equal("https://storage.example/raceday-images/start.png", db.Events.Single(e => e.EventId == ev.EventId).BannerImageUrl);
         }
     }
 }
