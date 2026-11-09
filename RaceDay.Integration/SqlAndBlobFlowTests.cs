@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Configuration;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -19,7 +20,7 @@ namespace RaceDay.Integration
      */
     public class SqlAndBlobFlowTests
     {
-        [Fact]
+        [SqlAndBlobFact]
         public async Task FreshDatabase_EnforcesRoles_AndStoresTheBannerInBlobStorage()
         {
             string? connection = Environment.GetEnvironmentVariable("RACEDAY_SQL_CONNECTION");
@@ -42,6 +43,7 @@ namespace RaceDay.Integration
                 builder.UseSetting("UseHttpsRedirection", "false");
                 builder.UseSetting("AzureBlob:ConnectionString", blob);
                 builder.UseSetting("AzureBlob:ContainerName", "raceday-images");
+                builder.UseSetting("AzureBlob:PublicBaseUrl", "");
             });
 
             using var thabo = api.CreateClient(new WebApplicationFactoryClientOptions { HandleCookies = true, AllowAutoRedirect = false });
@@ -63,8 +65,9 @@ namespace RaceDay.Integration
             Assert.Contains("47", results);
 
             using var upload = new MultipartFormDataContent();
-            var file = new ByteArrayContent(new byte[] { 137, 80, 78, 71, 13, 10, 26, 10, 1, 2, 3, 4 });
-            file.Headers.ContentType = new MediaTypeHeaderValue("image/png");
+            byte[] imageBytes = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGMQsjUCAADmAIKgfjuuAAAAAElFTkSuQmCC");
+            var file = new ByteArrayContent(imageBytes);
+            file.Headers.ContentType = new MediaTypeHeaderValue("text/html");
             upload.Add(file, "file", "banner.png");
             var uploaded = await thabo.PostAsync("/api/events/3/banner", upload);
             string uploadedBody = await uploaded.Content.ReadAsStringAsync();
@@ -77,9 +80,10 @@ namespace RaceDay.Integration
 
             var service = new BlobServiceClient(blob);
             var container = service.GetBlobContainerClient("raceday-images");
+            Assert.Equal(Azure.Storage.Blobs.Models.PublicAccessType.None, (await container.GetAccessPolicyAsync()).Value.BlobPublicAccess);
             string blobName = url.Split('/').Last();
             var downloaded = await container.GetBlobClient(blobName).DownloadContentAsync();
-            Assert.True(downloaded.Value.Content.ToMemory().Length > 0);
+            Assert.Equal(imageBytes, downloaded.Value.Content.ToArray());
 
             using var anonymous = new HttpClient();
             var publicBlob = await anonymous.GetAsync(url);
@@ -87,7 +91,38 @@ namespace RaceDay.Integration
 
             var streamed = await thabo.GetAsync("/api/events/3/banner");
             Assert.Equal(HttpStatusCode.OK, streamed.StatusCode);
-            Assert.True((await streamed.Content.ReadAsByteArrayAsync()).Length > 0);
+            Assert.Equal("image/png", streamed.Content.Headers.ContentType?.MediaType);
+            Assert.Equal(imageBytes, await streamed.Content.ReadAsByteArrayAsync());
+
+            using var profileUpload = new MultipartFormDataContent();
+            var profileFile = new ByteArrayContent(imageBytes);
+            profileFile.Headers.ContentType = new MediaTypeHeaderValue("image/png");
+            profileUpload.Add(profileFile, "file", "profile.png");
+            Assert.Equal(HttpStatusCode.OK, (await sipho.PostAsync("/api/users/profile/picture", profileUpload)).StatusCode);
+            var profilePicture = await sipho.GetAsync("/api/users/profile/picture");
+            Assert.Equal(HttpStatusCode.OK, profilePicture.StatusCode);
+            Assert.Equal(imageBytes, await profilePicture.Content.ReadAsByteArrayAsync());
+            Assert.True(profilePicture.Headers.CacheControl?.NoStore);
+            Assert.Equal(HttpStatusCode.NotFound, (await ayesha.GetAsync("/api/users/profile/picture")).StatusCode);
+            using var visitor = api.CreateClient();
+            Assert.Equal(HttpStatusCode.Unauthorized, (await visitor.GetAsync("/api/users/profile/picture")).StatusCode);
+
+            // Reject a foreign URL even when its last segment names a real local blob.
+            var imageStore = api.Services.GetRequiredService<RaceDay.API.Helpers.IImageStore>();
+            Assert.Null(await imageStore.OpenAsync("https://unrelated.example/" + blobName));
+            Assert.Null(await imageStore.OpenAsync(url.Replace("raceday-images/", "other-container/")));
+
+            string missingContainerName = "missing-" + Guid.NewGuid().ToString("N");
+            var missingConfiguration = new Microsoft.Extensions.Configuration.ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["AzureBlob:ConnectionString"] = blob,
+                    ["AzureBlob:ContainerName"] = missingContainerName
+                }).Build();
+            var readOnlyStore = new RaceDay.API.Helpers.AzureBlobImageStore(missingConfiguration);
+            var missingContainer = service.GetBlobContainerClient(missingContainerName);
+            Assert.Null(await readOnlyStore.OpenAsync(missingContainer.GetBlobClient("missing.png").Uri.AbsoluteUri));
+            Assert.False((await missingContainer.ExistsAsync()).Value);
 
             var handler = new NonDisposingHandler(api.Server.CreateHandler());
             await using var web = new WebApplicationFactory<WebEntryPoint>().WithWebHostBuilder(builder =>
@@ -114,6 +149,15 @@ namespace RaceDay.Integration
                 ["__RequestVerificationToken"] = token.Groups[1].Value
             }));
             Assert.Equal(HttpStatusCode.Redirect, loggedIn.StatusCode);
+
+            var mvcBanner = await browser.GetAsync("/Events/Banner/3");
+            Assert.Equal(HttpStatusCode.OK, mvcBanner.StatusCode);
+            Assert.Equal(imageBytes, await mvcBanner.Content.ReadAsByteArrayAsync());
+            var mvcPicture = await browser.GetAsync("/Profile/Picture");
+            Assert.Equal(HttpStatusCode.OK, mvcPicture.StatusCode);
+            Assert.Equal(imageBytes, await mvcPicture.Content.ReadAsByteArrayAsync());
+            Assert.True(mvcPicture.Headers.CacheControl?.NoStore);
+            Assert.Equal(HttpStatusCode.NotFound, (await browser.GetAsync("/Events/Banner/999999")).StatusCode);
 
             string myResults = await browser.GetStringAsync("/MyResults");
             Assert.Contains("Soweto Marathon", myResults);

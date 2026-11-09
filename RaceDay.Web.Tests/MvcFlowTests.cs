@@ -89,6 +89,18 @@ namespace RaceDay.Web.Tests
             Assert.Contains("/Account/Login", dashboard.Headers.Location?.OriginalString);
         }
 
+        [Fact]
+        public async Task MissingBanner_UsesTheMvcRouteAndOneShotLocalFallback()
+        {
+            using var client = CreateClient();
+            string html = await client.GetStringAsync("/");
+            Assert.Contains("src=\"/Events/Banner/3\"", html);
+            Assert.DoesNotContain("private.example", html);
+            Assert.Contains("this.onerror=null;this.hidden=true;", html);
+            Assert.Contains("class=\"banner-fallback\" hidden", html);
+            Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync("/Events/Banner/3")).StatusCode);
+        }
+
         private HttpClient CreateClient()
         {
             return _factory.CreateClient(new WebApplicationFactoryClientOptions
@@ -136,7 +148,8 @@ namespace RaceDay.Web.Tests
                             EventDate = DateTime.Now.AddDays(40),
                             Location = "Durban",
                             DistanceKm = 10,
-                            EventType = "Walk"
+                            EventType = "Walk",
+                            BannerImageUrl = "https://private.example/raceday-images/missing.png"
                         }
                     }
                 }));

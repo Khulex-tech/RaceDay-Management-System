@@ -43,38 +43,29 @@ namespace RaceDay.API.Helpers
 
         public async Task<ImageSaveResult> SaveAsync(IFormFile file)
         {
-            string? connectionString = _configuration["AzureBlob:ConnectionString"];
-            string containerName = _configuration["AzureBlob:ContainerName"] ?? "raceday-images";
-            if (string.IsNullOrWhiteSpace(containerName))
-            {
-                containerName = "raceday-images";
-            }
-
-            if (string.IsNullOrWhiteSpace(connectionString))
-            {
-                return ImageSaveResult.Failed("Azure Blob Storage is not configured.");
-            }
-
             try
             {
-                var container = await OpenContainerAsync();
+                var container = GetContainer();
                 if (container == null)
                 {
                     return ImageSaveResult.Failed("Azure Blob Storage is not configured.");
                 }
+
+                await container.CreateIfNotExistsAsync(PublicAccessType.None);
+                await container.SetAccessPolicyAsync(PublicAccessType.None);
 
                 string extension = Path.GetExtension(file.FileName).ToLowerInvariant();
                 string blobName = Guid.NewGuid().ToString("N") + extension;
                 var blob = container.GetBlobClient(blobName);
 
                 await using var stream = file.OpenReadStream();
-                string contentType = string.IsNullOrWhiteSpace(file.ContentType) ? "application/octet-stream" : file.ContentType;
+                string contentType = extension == ".png" ? "image/png" : "image/jpeg";
                 await blob.UploadAsync(stream, new BlobHttpHeaders { ContentType = contentType });
 
                 string? publicBase = _configuration["AzureBlob:PublicBaseUrl"];
                 string url = string.IsNullOrWhiteSpace(publicBase)
                     ? blob.Uri.ToString()
-                    : publicBase.TrimEnd('/') + "/" + containerName + "/" + blobName;
+                    : publicBase.TrimEnd('/') + "/" + container.Name + "/" + blobName;
 
                 return ImageSaveResult.Saved(url);
             }
@@ -93,13 +84,28 @@ namespace RaceDay.API.Helpers
 
             try
             {
-                var container = await OpenContainerAsync();
+                var container = GetContainer();
                 if (container == null)
                 {
                     return null;
                 }
 
                 string blobName = Uri.UnescapeDataString(uri.Segments[^1].Trim('/'));
+                string? publicBase = _configuration["AzureBlob:PublicBaseUrl"];
+                string expectedUrl = string.IsNullOrWhiteSpace(publicBase)
+                    ? container.GetBlobClient(blobName).Uri.AbsoluteUri
+                    : publicBase.TrimEnd('/') + "/" + container.Name + "/" + Uri.EscapeDataString(blobName);
+                if (string.IsNullOrWhiteSpace(blobName) || blobName.Contains('/') || blobName.Contains('\\') ||
+                    !Uri.TryCreate(expectedUrl, UriKind.Absolute, out Uri? expected) || uri != expected)
+                {
+                    return null;
+                }
+                string extension = Path.GetExtension(blobName).ToLowerInvariant();
+                if (extension != ".png" && extension != ".jpg" && extension != ".jpeg")
+                {
+                    return null;
+                }
+
                 var blob = container.GetBlobClient(blobName);
                 if (!await blob.ExistsAsync())
                 {
@@ -107,9 +113,7 @@ namespace RaceDay.API.Helpers
                 }
 
                 var download = await blob.DownloadStreamingAsync();
-                string contentType = string.IsNullOrWhiteSpace(download.Value.Details.ContentType)
-                    ? "application/octet-stream"
-                    : download.Value.Details.ContentType;
+                string contentType = extension == ".png" ? "image/png" : "image/jpeg";
                 return new ImageContent { Content = download.Value.Content, ContentType = contentType };
             }
             catch (Exception)
@@ -118,8 +122,8 @@ namespace RaceDay.API.Helpers
             }
         }
 
-        // Creates a private container. Pages do not read the blob anonymously; the API streams it.
-        private async Task<BlobContainerClient?> OpenContainerAsync()
+        // Reading an image must not create containers or change their access policy.
+        private BlobContainerClient? GetContainer()
         {
             string? connectionString = _configuration["AzureBlob:ConnectionString"];
             if (string.IsNullOrWhiteSpace(connectionString))
@@ -133,18 +137,7 @@ namespace RaceDay.API.Helpers
                 containerName = "raceday-images";
             }
 
-            var container = new BlobServiceClient(connectionString).GetBlobContainerClient(containerName);
-            await container.CreateIfNotExistsAsync(PublicAccessType.None);
-            try
-            {
-                await container.SetAccessPolicyAsync(PublicAccessType.None);
-            }
-            catch (Exception)
-            {
-                // A locked-down account may refuse the access change. The key can still read the blob.
-            }
-
-            return container;
+            return new BlobServiceClient(connectionString).GetBlobContainerClient(containerName);
         }
     }
 }

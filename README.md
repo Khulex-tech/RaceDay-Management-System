@@ -356,7 +356,7 @@ The API development settings point at the public Azurite emulator account (`devs
 
 Banners and profile pictures go from the browser to MVC, then MVC posts the file to the API. The API uses `Azure.Storage.Blobs`, keeps the container private, and saves the blob URL on the event or user. Pages do not use that URL as the image address. The API streams the file with the storage account key, and MVC shows `/Events/Banner/{id}` or `/Profile/Picture`. If the file is missing, the page shows the local event-type or initials fallback instead of a broken image. A public anonymous-read container is not required.
 
-Local check: Azurite, then upload a JPG or PNG. The blob URL is stored, and the picture is loaded through the API.
+Local check: Azurite, then upload a JPG or PNG. The blob URL is stored, and the picture is loaded through the API. Image reads use only the configured container and do not create containers or change access settings. Profile image responses are not cached. Uploaded image responses use the image type from the allowed filename extension, not a client-supplied HTML content type.
 
 Live Azure is separate. This repository was not given a storage account, and none was created. To point the API at a real account, set these values outside source control:
 
@@ -389,6 +389,8 @@ dotnet test
 ```
 
 That builds the API, the MVC site, the unit tests and the MVC navigation tests. `RaceDay.Integration` talks to SQL Server and Azurite only when both connection variables are set. Set `RACEDAY_REQUIRE_SQL=true` as well when that check must not be skipped. GitHub Actions (`.github/workflows/ci.yml`) starts SQL Server 2022 and Azurite, sets those variables, runs `dotnet test`, and builds both Dockerfiles.
+
+The SQL/Blob regression checks compare the uploaded bytes with the API and MVC image responses, check that anonymous blob reads fail, and keep profile pictures isolated between users. Without the connection variables, this test is reported as skipped rather than passed. The sample 47th place is kept separate from the three results on file; the saved row count is not treated as the race field size.
 
 The screenshot in section 8 is the Part 1 workflow. This is the Part 3 run of `.github/workflows/ci.yml` on `cursor/part3-mvc-2100`, after the push that includes the MVC site, SQL Server, Azurite and Docker image build:
 

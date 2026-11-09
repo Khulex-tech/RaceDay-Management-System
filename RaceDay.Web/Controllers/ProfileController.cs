@@ -72,6 +72,7 @@ namespace RaceDay.Web.Controllers
 
         [HttpGet]
         [ActionName("Picture")]
+        [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
         public async Task<IActionResult> PictureFile()
         {
             var file = await Api.GetProfilePictureAsync();
