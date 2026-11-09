@@ -70,4 +70,30 @@ app.UseSession();
 
 app.MapControllers();
 
+await ApplyMigrationsAsync(app);
+
 app.Run();
+
+static async Task ApplyMigrationsAsync(WebApplication app)
+{
+    if (!app.Configuration.GetValue("Database:ApplyMigrations", false))
+    {
+        return;
+    }
+
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<RaceDayDbContext>();
+    for (int attempt = 1; attempt <= 30; attempt++)
+    {
+        try
+        {
+            await db.Database.MigrateAsync();
+            return;
+        }
+        catch (Exception ex) when (attempt < 30)
+        {
+            app.Logger.LogWarning(ex, "SQL Server is not ready yet (attempt {Attempt}).", attempt);
+            await Task.Delay(TimeSpan.FromSeconds(3));
+        }
+    }
+}
