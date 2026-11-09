@@ -276,7 +276,10 @@ namespace RaceDay.API.Controllers
                     },
                     categoryName = en.Category!.Name,
                     status = en.EnrolmentStatus,
-                    enrolledAt = en.EnrolledAt
+                    enrolledAt = en.EnrolledAt,
+                    resultId = en.Result == null ? (int?)null : en.Result.ResultId,
+                    finishTime = en.Result == null ? (TimeSpan?)null : en.Result.FinishTime,
+                    position = en.Result == null ? (int?)null : en.Result.FinishingPosition
                 })
                 .ToListAsync();
 
