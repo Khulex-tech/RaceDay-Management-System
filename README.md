@@ -307,6 +307,14 @@ dotnet test
 
 ---
 
+## 10. Author
+
+**Name:** Thapelo Mkhari (Khulex-tech)
+
+**Module:** PROG6212 - Programming 2B
+
+**Part:** 3 of 3 - MVC, Blob Storage and Docker
+
 ## 11. Part 3 MVC site
 
 `RaceDay.Web` is an ASP.NET Core MVC app. It does not use Entity Framework and it does not open SQL Server. Every page calls `RaceDay.API` through `RaceDayApiClient`.
@@ -399,9 +407,3 @@ The screenshot in section 8 is the Part 1 workflow. This is the Part 3 run of `.
 ## 15. Video
 
 Part 3 still needs an unlisted YouTube video recorded by the student, with the student's own voice, showing the running MVC site, the blob upload and Docker. No video was recorded for this commit, and this README does not contain a placeholder link.
-
-## 16. Author
-
-**Name:** Thapelo Mkhari (Khulex-tech)  
-**Module:** PROG6212 - Programming 2B  
-**Part:** 3 of 3 - MVC, Blob Storage and Docker
