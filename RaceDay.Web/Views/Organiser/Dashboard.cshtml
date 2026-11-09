@@ -1,0 +1,59 @@
+@model OrganiserDashboard
+@{
+    ViewData["Title"] = "Dashboard";
+}
+<div class="page-head">
+    <div>
+        <h1>Organiser dashboard</h1>
+        <p class="muted">A summary of the events you created.</p>
+    </div>
+    <a class="btn" href="/organiser/events/create">Create event</a>
+</div>
+<div class="stat-grid">
+    <article class="stat-card">
+        <span class="muted">Events</span>
+        <strong>@Model.TotalEvents</strong>
+    </article>
+    <article class="stat-card">
+        <span class="muted">Active enrolments</span>
+        <strong>@Model.TotalEnrolments</strong>
+    </article>
+    <article class="stat-card">
+        <span class="muted">Next start</span>
+        <strong>@(Model.UpcomingEvents.Count == 0 ? "—" : Model.UpcomingEvents[0].EventDate.ToString("d MMM"))</strong>
+    </article>
+</div>
+<section class="panel">
+    <h2>Upcoming events</h2>
+    @if (Model.UpcomingEvents.Count == 0)
+    {
+        <p class="muted">You have no upcoming events. Create one to open entries.</p>
+    }
+    else
+    {
+        <div class="table-wrap">
+            <table>
+                <caption>Enrolments on your upcoming events</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Event</th>
+                        <th scope="col">Date</th>
+                        <th scope="col">Enrolments</th>
+                        <th scope="col"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.UpcomingEvents)
+                    {
+                        <tr>
+                            <td>@item.Name</td>
+                            <td>@item.EventDate.ToString("d MMM yyyy HH:mm")</td>
+                            <td>@item.EnrolmentCount</td>
+                            <td><a href="/organiser/events/@item.EventId/enrolments">View entries</a></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>

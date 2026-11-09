@@ -1,0 +1,77 @@
+@model EventForm
+@{
+    var types = ViewBag.Types as List<EventTypeItem> ?? new List<EventTypeItem>();
+    int? eventId = ViewBag.EventId as int?;
+    string? banner = ViewBag.Banner as string;
+    bool editing = eventId != null;
+    ViewData["Title"] = editing ? "Edit event" : "Create event";
+    string action = editing ? $"/organiser/events/{eventId}/edit" : "/organiser/events/create";
+}
+<div class="page-head">
+    <div>
+        <h1>@(editing ? "Edit event" : "Create event")</h1>
+        <p class="muted">Name, description, date, location, distance and event type are required.</p>
+    </div>
+</div>
+@if (editing && !string.IsNullOrWhiteSpace(banner))
+{
+    <img class="detail-banner" src="@banner" alt="Current event banner" style="margin-bottom:1rem;" />
+}
+<form method="post" action="@action" class="form-card">
+    <div asp-validation-summary="ModelOnly" class="banner banner-error" role="alert"></div>
+    <div class="form-grid">
+        <div>
+            <label asp-for="Name"></label>
+            <input asp-for="Name" />
+            <span asp-validation-for="Name" class="field-error"></span>
+        </div>
+        <div>
+            <label asp-for="EventType"></label>
+            <select asp-for="EventType">
+                @foreach (var type in types)
+                {
+                    <option value="@type.TypeName">@type.TypeName</option>
+                }
+            </select>
+            <span asp-validation-for="EventType" class="field-error"></span>
+        </div>
+        <div>
+            <label asp-for="EventDate"></label>
+            <input asp-for="EventDate" type="datetime-local" value="@Model.EventDate.ToString("yyyy-MM-ddTHH:mm")" />
+            <span asp-validation-for="EventDate" class="field-error"></span>
+        </div>
+        <div>
+            <label asp-for="DistanceKm"></label>
+            <input asp-for="DistanceKm" />
+            <span asp-validation-for="DistanceKm" class="field-error"></span>
+        </div>
+    </div>
+    <div style="margin-top:0.8rem;">
+        <label asp-for="Location"></label>
+        <input asp-for="Location" placeholder="Town or start venue" />
+        <span asp-validation-for="Location" class="field-error"></span>
+    </div>
+    <div style="margin-top:0.8rem;">
+        <label asp-for="Description"></label>
+        <textarea asp-for="Description"></textarea>
+        <span asp-validation-for="Description" class="field-error"></span>
+    </div>
+    <div class="actions" style="margin-top:1rem;">
+        <button class="btn" type="submit">@(editing ? "Save event" : "Create event")</button>
+        <a class="btn btn-quiet" href="/organiser/events">Cancel</a>
+    </div>
+</form>
+@if (editing)
+{
+    <form method="post" action="/organiser/events/@eventId/banner" enctype="multipart/form-data" class="form-card" style="margin-top:1rem;">
+        @Html.AntiForgeryToken()
+        <h2>Event banner</h2>
+        <p class="muted">The file is sent to the API, which stores it and saves the URL on the event.</p>
+        <label for="banner">JPG or PNG, up to 5 MB</label>
+        <input id="banner" type="file" name="file" accept=".jpg,.jpeg,.png,image/jpeg,image/png" />
+        <button class="btn" type="submit" style="margin-top:0.8rem;">Upload banner</button>
+    </form>
+}
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
