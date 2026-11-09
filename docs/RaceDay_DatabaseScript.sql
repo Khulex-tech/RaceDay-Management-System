@@ -116,13 +116,14 @@ INSERT INTO EventTypes (Name) VALUES
 GO
 
 -- Seeding 2 Organisers and 4 Participants
+-- PasswordHash values are PBKDF2 hashes for RaceDay@2026, the same hashes seeded by EF Core.
 INSERT INTO Users (FirstName, LastName, Email, PasswordHash, PhoneNumber, Role) VALUES
-    ('Thabo', 'Mokoena', 'thabo.mokoena@raceday.co.za', 'hashed_password_sample_01', '0821234567', 'Organiser'),
-    ('Ayesha', 'Patel', 'ayesha.patel@raceday.co.za', 'hashed_password_sample_02', '0837654321', 'Organiser'),
-    ('Sipho', 'Ndlovu', 'sipho.ndlovu@gmail.com', 'hashed_password_sample_03', '0725558899', 'Participant'),
-    ('Lerato', 'Dlamini', 'lerato.dlamini@outlook.com', 'hashed_password_sample_04', '0794443322', 'Participant'),
-    ('Johan', 'van Wyk', 'johan.vanwyk@webmail.co.za', 'hashed_password_sample_05', '0836661177', 'Participant'),
-    ('Nomvula', 'Zulu', 'nomvula.zulu@gmail.com', 'hashed_password_sample_06', '0713338844', 'Participant');
+    ('Thabo', 'Mokoena', 'thabo.mokoena@raceday.co.za', 'phJIUg5kdMetJqiOOLuXeg==:cM/visUxQ7Fk85QIadyVmECBnFckBj9aJaK3pxtIM1I=', '0821234567', 'Organiser'),
+    ('Ayesha', 'Patel', 'ayesha.patel@raceday.co.za', 'lU1ZVyM42Gonr2+7wqoUog==:PnPxctHVy67EYkpAImK3Dg4uttnbMwflgUew+nNd6jM=', '0837654321', 'Organiser'),
+    ('Sipho', 'Ndlovu', 'sipho.ndlovu@gmail.com', 'Xw11JNrUbh0bnTvT1encFw==:Oy3IR3eFdGdLM5urNrY0/0KyhRbCUR2nDPWtvYopKCI=', '0725558899', 'Participant'),
+    ('Lerato', 'Dlamini', 'lerato.dlamini@outlook.com', 'fSq5ZvYxJtXrlNDmK3XQeg==:RL7cKqQeSfLIPegWFEfPJoQMHLEabsn7MCpVCS1cl/U=', '0794443322', 'Participant'),
+    ('Johan', 'van Wyk', 'johan.vanwyk@webmail.co.za', 'EnjxIFJO6OcQNrT25KjbHg==:2oHPW913wqyLnSNnrUvUjr2rBUOwGBWdoqyiZE38h68=', '0836661177', 'Participant'),
+    ('Nomvula', 'Zulu', 'nomvula.zulu@gmail.com', 'UJtpXX988YAxVJIzVcqv1Q==:RUnx7r2W9rxWm01vJGHiCrLctxwSRBDLdD869DZrjL4=', '0713338844', 'Participant');
 GO
 
 -- Seeding 3 events, one of each event type
