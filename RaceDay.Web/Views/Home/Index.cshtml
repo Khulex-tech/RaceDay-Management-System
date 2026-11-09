@@ -1,0 +1,18 @@
+﻿@{
+    ViewData["Title"] = "Home";
+}
+<section class="hero">
+    <div class="hero-copy">
+        <h1>Race day starts here</h1>
+        <p>Browse road runs, walks and cycle events across South Africa. Organisers publish the start, the route options and the results. Participants enter a category and keep their own race history.</p>
+        <div class="actions">
+            <a class="btn btn-gold" href="/Account/Register">Create an account</a>
+            <a class="btn btn-quiet" href="/Account/Login" style="color:#fff;border-color:#fff;">Log in</a>
+        </div>
+    </div>
+    <img src="~/images/road.svg" alt="Illustrated road leading to a start banner" />
+</section>
+<section class="empty-state">
+    <h2>Events will load from the RaceDay API</h2>
+    <p class="muted">The home page lists upcoming events once the API client is connected. Nothing on this site reads the database directly.</p>
+</section>

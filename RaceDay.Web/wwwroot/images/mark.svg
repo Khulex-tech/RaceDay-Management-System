@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="RaceDay mark">
+  <rect width="64" height="64" rx="14" fill="#0B3D2E"/>
+  <path d="M10 44h44" stroke="#F4C430" stroke-width="3" stroke-linecap="round"/>
+  <path d="M14 44c6-16 10-16 16 0 6-18 10-18 16 0" fill="none" stroke="#F7F4EF" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="46" cy="22" r="5" fill="#F4C430"/>
+</svg>
