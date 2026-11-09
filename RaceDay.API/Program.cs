@@ -34,6 +34,7 @@ builder.Services.AddDbContext<RaceDayDbContext>(options =>
  * After login the API stores UserId and Role in the session and the client
  * only receives the session cookie.
  */
+builder.Services.AddSingleton<IImageStore, AzureBlobImageStore>();
 builder.Services.AddHttpClient<IWeatherClient, OpenMeteoWeatherClient>(client =>
 {
     client.Timeout = TimeSpan.FromSeconds(8);

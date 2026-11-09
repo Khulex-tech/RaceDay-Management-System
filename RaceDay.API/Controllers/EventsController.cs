@@ -15,13 +15,13 @@ namespace RaceDay.API.Controllers
     public class EventsController : BaseApiController
     {
         private readonly RaceDayDbContext _db;
-        private readonly IWebHostEnvironment _env;
+        private readonly IImageStore _images;
         private readonly IWeatherClient _weather;
 
-        public EventsController(RaceDayDbContext db, IWebHostEnvironment env, IWeatherClient? weather = null)
+        public EventsController(RaceDayDbContext db, IImageStore images, IWeatherClient? weather = null)
         {
             _db = db;
-            _env = env;
+            _images = images;
             _weather = weather ?? new OpenMeteoWeatherClient(new HttpClient { Timeout = TimeSpan.FromSeconds(8) });
         }
 
@@ -436,7 +436,13 @@ namespace RaceDay.API.Controllers
                 return BadRequest(new { message = error });
             }
 
-            ev.BannerImageUrl = await ImageUploadHelper.SaveAsync(file!, _env.WebRootPath);
+            ImageSaveResult saved = await _images.SaveAsync(file!);
+            if (!saved.Success || saved.Url == null)
+            {
+                return StatusCode(StatusCodes.Status503ServiceUnavailable, new { message = saved.Error });
+            }
+
+            ev.BannerImageUrl = saved.Url;
             await _db.SaveChangesAsync();
 
             return Ok(new { eventId = ev.EventId, bannerImageUrl = ev.BannerImageUrl });
