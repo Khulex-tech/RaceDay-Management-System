@@ -391,7 +391,9 @@ dotnet test
 
 That builds the API, the MVC site, the unit tests and the MVC navigation tests. `RaceDay.Integration` talks to SQL Server and Azurite only when both connection variables are set. Set `RACEDAY_REQUIRE_SQL=true` as well when that check must not be skipped. GitHub Actions (`.github/workflows/ci.yml`) starts SQL Server 2022 and Azurite, sets those variables, runs `dotnet test`, and builds both Dockerfiles.
 
-The screenshot in section 8 is the Part 1 workflow. A Part 3 screenshot belongs here only after a real green run of `.github/workflows/ci.yml` is captured. There is no substitute image.
+The screenshot in section 8 is the Part 1 workflow. This is the Part 3 run of `.github/workflows/ci.yml` on `cursor/part3-mvc-2100`, after the push that includes the MVC site, SQL Server, Azurite and Docker image build:
+
+![Part 3 CI success](docs/PART3-CI.png)
 
 ## 15. Video
 
