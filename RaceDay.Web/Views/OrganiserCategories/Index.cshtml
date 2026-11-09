@@ -1,0 +1,84 @@
+@model List<CategoryItem>
+@{
+    ViewData["Title"] = "Categories";
+    int eventId = (int)ViewBag.EventId;
+    string eventName = ViewBag.EventName as string ?? "Event";
+}
+<div class="page-head">
+    <div>
+        <h1>Categories</h1>
+        <p class="muted">@eventName</p>
+    </div>
+    <a class="btn btn-quiet" href="/organiser/events">Back to events</a>
+</div>
+<form method="post" action="/organiser/events/@eventId/categories" class="form-card" style="margin-bottom:1rem;">
+    <h2>Add a category</h2>
+    <div class="form-grid">
+        <div>
+            <label for="name">Name</label>
+            <input id="name" name="CategoryName" required maxlength="100" />
+        </div>
+        <div>
+            <label for="fee">Entry fee (R)</label>
+            <input id="fee" name="EntryFee" type="number" min="0" step="0.01" value="0" />
+        </div>
+        <div>
+            <label for="minAge">Minimum age</label>
+            <input id="minAge" name="MinAge" type="number" min="0" max="120" value="18" />
+        </div>
+        <div>
+            <label for="maxAge">Maximum age</label>
+            <input id="maxAge" name="MaxAge" type="number" min="0" max="120" value="59" />
+        </div>
+    </div>
+    <div style="margin-top:0.8rem;">
+        <label for="description">Description</label>
+        <input id="description" name="Description" maxlength="250" />
+    </div>
+    <button class="btn" type="submit" style="margin-top:0.8rem;">Add category</button>
+</form>
+@if (Model.Count == 0)
+{
+    <section class="empty-state">
+        <h2>No categories yet</h2>
+        <p class="muted">Participants cannot enter until at least one category exists.</p>
+    </section>
+}
+else
+{
+    <div class="panel">
+        @foreach (var category in Model)
+        {
+            <form method="post" action="/organiser/events/@eventId/categories/@category.CategoryId" class="form-grid" style="margin-bottom:0.8rem;align-items:end;">
+                <div>
+                    <label for="name-@category.CategoryId">Name</label>
+                    <input id="name-@category.CategoryId" name="CategoryName" value="@category.CategoryName" required />
+                </div>
+                <div>
+                    <label for="desc-@category.CategoryId">Description</label>
+                    <input id="desc-@category.CategoryId" name="Description" value="@category.Description" />
+                </div>
+                <div>
+                    <label for="fee-@category.CategoryId">Fee</label>
+                    <input id="fee-@category.CategoryId" name="EntryFee" type="number" min="0" step="0.01" value="@category.EntryFee" />
+                </div>
+                <div>
+                    <label for="ages-@category.CategoryId">Ages</label>
+                    <div class="inline-form">
+                        <input id="ages-@category.CategoryId" name="MinAge" type="number" value="@category.MinAge" style="width:5rem;" />
+                        <span>to</span>
+                        <input name="MaxAge" type="number" value="@category.MaxAge" aria-label="Maximum age for @category.CategoryName" style="width:5rem;" />
+                    </div>
+                </div>
+                <div class="actions">
+                    <button class="btn" type="submit">Save</button>
+                </div>
+            </form>
+            <form method="post" action="/organiser/events/@eventId/categories/@category.CategoryId/delete" class="inline-form" style="margin-bottom:1rem;">
+                @Html.AntiForgeryToken()
+                <button class="btn btn-danger" type="submit">Delete @category.CategoryName</button>
+                <span class="muted">@category.EnrolledCount active entries</span>
+            </form>
+        }
+    </div>
+}

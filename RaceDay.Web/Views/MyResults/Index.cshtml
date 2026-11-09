@@ -1,0 +1,48 @@
+@model List<MyResultItem>
+@{
+    ViewData["Title"] = "My Results";
+}
+<div class="page-head">
+    <div>
+        <h1>My Results</h1>
+        <p class="muted">The position is the place the organiser recorded. The count next to it is how many results are saved, not the size of the field.</p>
+    </div>
+</div>
+@if (Model.Count == 0)
+{
+    <section class="empty-state">
+        <h2>No results yet</h2>
+        <p class="muted">When an organiser publishes your finish time, it will show up here.</p>
+    </section>
+}
+else
+{
+    <div class="panel">
+        <div class="table-wrap">
+            <table>
+                <caption>Personal race history</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Event</th>
+                        <th scope="col">Date</th>
+                        <th scope="col">Category</th>
+                        <th scope="col">Finish time</th>
+                        <th scope="col">Position</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>@item.EventName</td>
+                            <td>@item.EventDate.ToString("d MMM yyyy")</td>
+                            <td>@item.CategoryName</td>
+                            <td>@item.FinishTime</td>
+                            <td>@FinishPosition.Format(item.Position, item.TotalFinishers)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

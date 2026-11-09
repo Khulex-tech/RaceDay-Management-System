@@ -1,0 +1,50 @@
+# Local demo stack. The SQL password and Azurite account are for this compose file only.
+# Azurite is the storage emulator. It is not a live Azure Storage account.
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "RaceDay_Dev_2026!"
+    ports:
+      - "1433:1433"
+
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite
+    command: azurite --blobHost 0.0.0.0 --blobPort 10000 --queueHost 0.0.0.0 --tableHost 0.0.0.0
+    ports:
+      - "10000:10000"
+
+  api:
+    build:
+      context: .
+      dockerfile: RaceDay.API/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      UseHttpsRedirection: "false"
+      Database__ApplyMigrations: "true"
+      ConnectionStrings__DefaultConnection: Server=sqlserver,1433;Database=RaceDayDb;User Id=sa;Password=RaceDay_Dev_2026!;TrustServerCertificate=True
+      AzureBlob__ConnectionString: DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;
+      AzureBlob__ContainerName: raceday-images
+      AzureBlob__PublicBaseUrl: http://localhost:10000/devstoreaccount1
+      Authentication__OrganiserInviteCode: raceday-organiser
+    ports:
+      - "8081:8080"
+    depends_on:
+      - sqlserver
+      - azurite
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      UseHttpsRedirection: "false"
+      Api__BaseUrl: http://api:8080
+    ports:
+      - "8080:8080"
+    depends_on:
+      - api

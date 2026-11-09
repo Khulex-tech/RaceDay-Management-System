@@ -1,8 +1,8 @@
 namespace RaceDay.API.Helpers
 {
     /*
-     * Saves uploaded images (profile pictures and event banners) to wwwroot/uploads
-     * and returns the URL path. Part 3 will swap this for Azure Blob Storage.
+     * Checks profile pictures and event banners before they are sent to Azure Blob Storage.
+     * The MVC site never stores the file itself.
      */
     public static class ImageUploadHelper
     {
@@ -29,23 +29,6 @@ namespace RaceDay.API.Helpers
             }
 
             return null;
-        }
-
-        // Saves the file with a unique name and returns its URL, e.g. /uploads/abc123.png
-        public static async Task<string> SaveAsync(IFormFile file, string webRootPath)
-        {
-            string uploadFolder = Path.Combine(webRootPath, "uploads");
-            Directory.CreateDirectory(uploadFolder);
-
-            string fileName = Guid.NewGuid() + Path.GetExtension(file.FileName).ToLower();
-            string fullPath = Path.Combine(uploadFolder, fileName);
-
-            using (var stream = new FileStream(fullPath, FileMode.Create))
-            {
-                await file.CopyToAsync(stream);
-            }
-
-            return "/uploads/" + fileName;
         }
     }
 }

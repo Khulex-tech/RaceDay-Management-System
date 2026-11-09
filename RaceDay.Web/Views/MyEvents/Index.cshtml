@@ -1,0 +1,86 @@
+@model List<MyEnrolment>
+@{
+    ViewData["Title"] = "My Events";
+    var categories = ViewBag.Categories as Dictionary<int, List<CategoryItem>> ?? new Dictionary<int, List<CategoryItem>>();
+}
+<div class="page-head">
+    <div>
+        <h1>My Events</h1>
+        <p class="muted">Every event you have entered, with the category and status chosen for you.</p>
+    </div>
+</div>
+@if (Model.Count == 0)
+{
+    <section class="empty-state">
+        <h2>You have not entered an event yet</h2>
+        <p class="muted">Browse the home page and pick a category on an upcoming event.</p>
+        <a class="btn" href="/">Find an event</a>
+    </section>
+}
+else
+{
+    <div class="panel">
+        <div class="table-wrap">
+            <table>
+                <caption>Your enrolments</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Event</th>
+                        <th scope="col">When</th>
+                        <th scope="col">Category</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        bool open = item.EventDate > DateTime.Now && item.Status != "Cancelled";
+                        <tr>
+                            <td>
+                                <a href="/Events/Details/@item.EventId">@item.EventName</a>
+                                <div class="muted">@item.Location</div>
+                            </td>
+                            <td>@item.EventDate.ToString("d MMM yyyy")</td>
+                            <td>@item.CategoryName</td>
+                            <td><partial name="_Status" model="item.Status" /></td>
+                            <td>
+                                @if (open && categories.TryGetValue(item.EventId, out var options))
+                                {
+                                    <form method="post" action="/MyEvents/ChangeCategory" class="inline-form">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="enrolmentId" value="@item.EnrolmentId" />
+                                        <label class="visually-hidden" for="cat-@item.EnrolmentId">New category</label>
+                                        <select id="cat-@item.EnrolmentId" name="categoryId">
+                                            @foreach (var option in options)
+                                            {
+                                                if (option.CategoryName == item.CategoryName)
+                                                {
+                                                    <option value="@option.CategoryId" selected>@option.CategoryName</option>
+                                                }
+                                                else
+                                                {
+                                                    <option value="@option.CategoryId">@option.CategoryName</option>
+                                                }
+                                            }
+                                        </select>
+                                        <button class="btn btn-quiet" type="submit">Update</button>
+                                    </form>
+                                    <form method="post" action="/MyEvents/Withdraw" class="inline-form" style="margin-top:0.4rem;">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="enrolmentId" value="@item.EnrolmentId" />
+                                        <button class="btn btn-danger" type="submit">Withdraw</button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <span class="muted">Closed</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

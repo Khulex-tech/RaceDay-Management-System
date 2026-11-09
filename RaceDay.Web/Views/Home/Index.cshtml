@@ -1,0 +1,100 @@
+﻿@model PagedEvents
+@{
+    ViewData["Title"] = "Home";
+    var filter = ViewBag.Filter as HomeFilter ?? new HomeFilter();
+    var types = ViewBag.Types as List<EventTypeItem> ?? new List<EventTypeItem>();
+    int pageCount = Model.PageSize == 0 ? 1 : (int)Math.Ceiling(Model.TotalCount / (double)Model.PageSize);
+}
+<section class="hero">
+    <div class="hero-copy">
+        <h1>Find your next start line</h1>
+        <p>Upcoming runs, walks and cycle events. Filter by type, place or date, then open an event to see the route options and the weather at the start.</p>
+    </div>
+    <img src="~/images/road.svg" alt="Illustrated road leading to a start banner" />
+</section>
+<form method="get" class="filters" role="search">
+    <div class="filter-grid">
+        <div>
+            <label for="search">Search</label>
+            <input id="search" name="search" value="@filter.Search" placeholder="Name or location" />
+        </div>
+        <div>
+            <label for="eventType">Event type</label>
+            <select id="eventType" name="eventType">
+                <option value="">All types</option>
+                @foreach (var type in types)
+                {
+                    if (filter.EventType == type.TypeName)
+                    {
+                        <option value="@type.TypeName" selected>@type.TypeName</option>
+                    }
+                    else
+                    {
+                        <option value="@type.TypeName">@type.TypeName</option>
+                    }
+                }
+            </select>
+        </div>
+        <div>
+            <label for="fromDate">From</label>
+            <input id="fromDate" type="date" name="fromDate" value="@filter.FromDate?.ToString("yyyy-MM-dd")" />
+        </div>
+        <div>
+            <label for="toDate">To</label>
+            <input id="toDate" type="date" name="toDate" value="@filter.ToDate?.ToString("yyyy-MM-dd")" />
+        </div>
+    </div>
+    <div class="actions" style="margin-top:0.8rem;">
+        <label style="font-weight:600;">
+            <input type="checkbox" name="includePast" value="true" @(filter.IncludePast ? "checked" : null) />
+            Include past events
+        </label>
+        <button class="btn" type="submit">Apply filters</button>
+        <a class="btn btn-quiet" href="/">Clear</a>
+    </div>
+</form>
+@if (Model.Items.Count == 0)
+{
+    <section class="empty-state">
+        <h2>No events match these filters</h2>
+        <p class="muted">Try another town, event type, or include past events.</p>
+    </section>
+}
+else
+{
+    <div class="card-grid">
+        @foreach (var item in Model.Items)
+        {
+            <article class="event-card">
+                @if (string.IsNullOrWhiteSpace(item.BannerImageUrl))
+                {
+                    <div class="banner-fallback">@item.EventType</div>
+                }
+                else
+                {
+                    <img src="/Events/Banner/@item.EventId" alt="Banner for @item.Name" onerror="this.onerror=null;this.hidden=true;if(this.nextElementSibling){this.nextElementSibling.hidden=false;}" />
+                    <div class="banner-fallback" hidden>@item.EventType</div>
+                }
+                <div class="body">
+                    <h2>@item.Name</h2>
+                    <p class="muted">@item.EventDate.ToString("dddd, d MMMM yyyy") · @item.Location</p>
+                    <div class="meta">
+                        <span class="chip">@item.EventType</span>
+                        <span class="chip">@item.DistanceKm.ToString("0.##") km</span>
+                        <span class="chip">@item.EnrolmentCount entered</span>
+                    </div>
+                    <a class="btn" href="/Events/Details/@item.EventId">View event</a>
+                </div>
+            </article>
+        }
+    </div>
+    @if (pageCount > 1)
+    {
+        <nav class="actions" style="margin-top:1rem;" aria-label="Pages">
+            @for (int number = 1; number <= pageCount; number++)
+            {
+                <a class="btn @(number == Model.Page ? "" : "btn-quiet")" href="/?page=@number&search=@filter.Search&eventType=@filter.EventType&includePast=@filter.IncludePast&fromDate=@filter.FromDate?.ToString("yyyy-MM-dd")&toDate=@filter.ToDate?.ToString("yyyy-MM-dd")">@number</a>
+            }
+        </nav>
+    }
+}

@@ -1,0 +1,61 @@
+@model ProfilePage
+@{
+    ViewData["Title"] = "Profile";
+    var profile = ViewBag.Profile as UserProfile;
+    string initials = profile == null ? "?" : $"{profile.FirstName.FirstOrDefault()}{profile.LastName.FirstOrDefault()}";
+}
+<div class="page-head">
+    <div>
+        <h1>Profile</h1>
+        <p class="muted">@(profile?.Email) · @(profile?.Role)</p>
+    </div>
+</div>
+<section class="panel" style="margin-bottom:1rem;">
+    <div class="profile-row">
+        @if (string.IsNullOrWhiteSpace(profile?.ProfilePictureUrl))
+        {
+            <div class="avatar-fallback" aria-hidden="true">@initials</div>
+        }
+        else
+        {
+            <img class="avatar" src="/Profile/Picture" alt="Profile picture of @profile.FirstName @profile.LastName" onerror="this.onerror=null;this.hidden=true;if(this.nextElementSibling){this.nextElementSibling.hidden=false;}" />
+            <div class="avatar-fallback" aria-hidden="true" hidden>@initials</div>
+        }
+        <form method="post" action="/Profile/Picture" enctype="multipart/form-data">
+            @Html.AntiForgeryToken()
+            <label for="file">Profile picture (JPG or PNG, up to 5 MB)</label>
+            <input id="file" type="file" name="file" accept=".jpg,.jpeg,.png,image/jpeg,image/png" />
+            <button class="btn" type="submit" style="margin-top:0.6rem;">Upload picture</button>
+        </form>
+    </div>
+</section>
+<div class="split">
+    <form method="post" action="/Profile/Update" class="form-card">
+        <h2>Personal details</h2>
+        <div class="form-grid">
+            <div>
+                <label asp-for="Details.FirstName"></label>
+                <input asp-for="Details.FirstName" />
+            </div>
+            <div>
+                <label asp-for="Details.LastName"></label>
+                <input asp-for="Details.LastName" />
+            </div>
+        </div>
+        <div style="margin-top:0.8rem;">
+            <label asp-for="Details.PhoneNumber"></label>
+            <input asp-for="Details.PhoneNumber" />
+        </div>
+        <button class="btn" type="submit" style="margin-top:1rem;">Save profile</button>
+    </form>
+    <form method="post" action="/Profile/Password" class="form-card">
+        <h2>Password</h2>
+        <label asp-for="Password.CurrentPassword"></label>
+        <input asp-for="Password.CurrentPassword" />
+        <label asp-for="Password.NewPassword" style="margin-top:0.8rem;"></label>
+        <input asp-for="Password.NewPassword" />
+        <label asp-for="Password.ConfirmNewPassword" style="margin-top:0.8rem;"></label>
+        <input asp-for="Password.ConfirmNewPassword" />
+        <button class="btn" type="submit" style="margin-top:1rem;">Change password</button>
+    </form>
+</div>

@@ -16,6 +16,7 @@ on:
       - "part-2*"
       - "part-3*"
       - "final*"
+      - "cursor/**"
   pull_request:
     branches:
       - main
@@ -23,11 +24,30 @@ on:
       - "part-2*"
       - "part-3*"
       - "final*"
+      - "cursor/**"
 
 jobs:
   build-and-test:
     name: Restore, build and test
     runs-on: ubuntu-latest
+
+    services:
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: "Y"
+          MSSQL_SA_PASSWORD: "RaceDay_Dev_2026!"
+        ports:
+          - 1433:1433
+      azurite:
+        image: mcr.microsoft.com/azure-storage/azurite
+        ports:
+          - 10000:10000
+
+    env:
+      RACEDAY_SQL_CONNECTION: Server=localhost,1433;Database=RaceDayDb;User Id=sa;Password=RaceDay_Dev_2026!;TrustServerCertificate=True
+      RACEDAY_BLOB_CONNECTION: DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;
+      RACEDAY_REQUIRE_SQL: "true"
 
     steps:
       - name: Checkout repository
