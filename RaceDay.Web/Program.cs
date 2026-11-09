@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using RaceDay.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,6 +10,18 @@ builder.Services.AddControllersWithViews(options =>
 });
 
 builder.Services.AddHttpContextAccessor();
+
+string apiBase = builder.Configuration["Api:BaseUrl"] ?? "http://localhost:5043";
+builder.Services.AddHttpClient<IRaceDayApi, RaceDayApiClient>(client =>
+{
+    client.BaseAddress = new Uri(apiBase.TrimEnd('/') + "/");
+})
+.ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+{
+    // CookieContainer would share the API session across every visitor on this process.
+    UseCookies = false,
+    AllowAutoRedirect = false
+});
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(options =>
 {
