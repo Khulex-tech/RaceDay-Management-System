@@ -1,0 +1,76 @@
+@model List<EventEnrolmentRow>
+@{
+    ViewData["Title"] = "Results";
+    int eventId = (int)ViewBag.EventId;
+    string eventName = ViewBag.EventName as string ?? "Event";
+    bool canCapture = ViewBag.CanCapture is true;
+    var active = Model.Where(row => row.Status != "Cancelled").ToList();
+}
+<div class="page-head">
+    <div>
+        <h1>Results</h1>
+        <p class="muted">@eventName</p>
+    </div>
+    <a class="btn btn-quiet" href="/organiser/events">Back to events</a>
+</div>
+@if (!canCapture)
+{
+    <div class="banner banner-error" role="status">Results can be captured after the event has taken place.</div>
+}
+@if (active.Count == 0)
+{
+    <section class="empty-state">
+        <h2>No active enrolments</h2>
+        <p class="muted">There is nobody to give a finish time to yet.</p>
+    </section>
+}
+else
+{
+    <div class="panel">
+        <div class="table-wrap">
+            <table>
+                <caption>Finish times and positions</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Participant</th>
+                        <th scope="col">Category</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Result</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in active)
+                    {
+                        <tr>
+                            <td>@(row.Participant?.FullName ?? "Participant")</td>
+                            <td>@row.CategoryName</td>
+                            <td><partial name="_Status" model="row.Status" /></td>
+                            <td>
+                                @if (!canCapture)
+                                {
+                                    <span class="muted">Waiting for race day</span>
+                                }
+                                else
+                                {
+                                    <form method="post" action="/organiser/events/@eventId/results" class="inline-form">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="EnrolmentId" value="@row.EnrolmentId" />
+                                        @if (row.ResultId != null)
+                                        {
+                                            <input type="hidden" name="ResultId" value="@row.ResultId" />
+                                        }
+                                        <label class="visually-hidden" for="time-@row.EnrolmentId">Finish time</label>
+                                        <input id="time-@row.EnrolmentId" name="FinishTime" value="@row.FinishTime" placeholder="hh:mm:ss" pattern="\d{2}:\d{2}:\d{2}" required style="width:8rem;" />
+                                        <label class="visually-hidden" for="pos-@row.EnrolmentId">Position</label>
+                                        <input id="pos-@row.EnrolmentId" name="Position" type="number" min="1" value="@(row.Position ?? 1)" required style="width:6rem;" />
+                                        <button class="btn" type="submit">@(row.ResultId == null ? "Capture" : "Update")</button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

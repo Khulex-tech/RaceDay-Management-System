@@ -250,6 +250,7 @@ namespace RaceDay.API.Controllers
                 .Select(r => new
                 {
                     resultId = r.ResultId,
+                    enrolmentId = r.EnrolmentId,
                     position = r.FinishingPosition,
                     participantName = r.Enrolment!.Participant!.FirstName + " " + r.Enrolment.Participant.LastName,
                     categoryName = r.Enrolment.Category!.Name,
