@@ -448,6 +448,27 @@ namespace RaceDay.API.Controllers
             return Ok(new { eventId = ev.EventId, bannerImageUrl = ev.BannerImageUrl });
         }
 
+        // Streams the stored banner. Callers do not need a public blob container.
+        [HttpGet("events/{id:int}/banner")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetBannerFile(int id)
+        {
+            var ev = await _db.Events.FindAsync(id);
+            if (ev == null || string.IsNullOrWhiteSpace(ev.BannerImageUrl))
+            {
+                return NotFound();
+            }
+
+            ImageContent? image = await _images.OpenAsync(ev.BannerImageUrl);
+            if (image == null)
+            {
+                return NotFound();
+            }
+
+            return File(image.Content, image.ContentType);
+        }
+
         // Route options come from the event and its categories. Weather is the current Open-Meteo reading.
         [HttpGet("events/{id:int}/race-prep")]
         [ProducesResponseType(StatusCodes.Status200OK)]

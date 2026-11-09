@@ -12,13 +12,14 @@
     </div>
     <a class="btn btn-quiet" href="/">Back to events</a>
 </div>
-@if (!string.IsNullOrWhiteSpace(Model.BannerImageUrl))
+@if (string.IsNullOrWhiteSpace(Model.BannerImageUrl))
 {
-    <img class="detail-banner" src="@Model.BannerImageUrl" alt="Banner for @Model.Name" />
+    <img class="detail-banner" src="~/images/road.svg" alt="Illustrated road for events without a banner yet" />
 }
 else
 {
-    <img class="detail-banner" src="~/images/road.svg" alt="Illustrated road for events without a banner yet" />
+    <img class="detail-banner" src="/Events/Banner/@Model.EventId" alt="Banner for @Model.Name" onerror="this.onerror=null;this.hidden=true;if(this.nextElementSibling){this.nextElementSibling.hidden=false;}" />
+    <img class="detail-banner" src="~/images/road.svg" alt="Illustrated road for events without a banner yet" hidden />
 }
 <div class="split" style="margin-top:1rem;">
     <section class="panel">

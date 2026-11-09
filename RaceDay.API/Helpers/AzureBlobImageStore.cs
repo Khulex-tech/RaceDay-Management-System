@@ -13,9 +13,18 @@ namespace RaceDay.API.Helpers
         public static ImageSaveResult Failed(string error) => new() { Success = false, Error = error };
     }
 
+    public class ImageContent
+    {
+        public Stream Content { get; init; } = Stream.Null;
+        public string ContentType { get; init; } = "application/octet-stream";
+    }
+
     public interface IImageStore
     {
         Task<ImageSaveResult> SaveAsync(IFormFile file);
+
+        // Reads a stored blob with the account key. The container does not need to be public.
+        Task<ImageContent?> OpenAsync(string storedUrl);
     }
 
     /*
@@ -48,9 +57,11 @@ namespace RaceDay.API.Helpers
 
             try
             {
-                var service = new BlobServiceClient(connectionString);
-                var container = service.GetBlobContainerClient(containerName);
-                await container.CreateIfNotExistsAsync(PublicAccessType.Blob);
+                var container = await OpenContainerAsync();
+                if (container == null)
+                {
+                    return ImageSaveResult.Failed("Azure Blob Storage is not configured.");
+                }
 
                 string extension = Path.GetExtension(file.FileName).ToLowerInvariant();
                 string blobName = Guid.NewGuid().ToString("N") + extension;
@@ -71,6 +82,69 @@ namespace RaceDay.API.Helpers
             {
                 return ImageSaveResult.Failed("The image could not be stored. Check the blob storage connection.");
             }
+        }
+
+        public async Task<ImageContent?> OpenAsync(string storedUrl)
+        {
+            if (string.IsNullOrWhiteSpace(storedUrl) || !Uri.TryCreate(storedUrl, UriKind.Absolute, out Uri? uri))
+            {
+                return null;
+            }
+
+            try
+            {
+                var container = await OpenContainerAsync();
+                if (container == null)
+                {
+                    return null;
+                }
+
+                string blobName = Uri.UnescapeDataString(uri.Segments[^1].Trim('/'));
+                var blob = container.GetBlobClient(blobName);
+                if (!await blob.ExistsAsync())
+                {
+                    return null;
+                }
+
+                var download = await blob.DownloadStreamingAsync();
+                string contentType = string.IsNullOrWhiteSpace(download.Value.Details.ContentType)
+                    ? "application/octet-stream"
+                    : download.Value.Details.ContentType;
+                return new ImageContent { Content = download.Value.Content, ContentType = contentType };
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        // Creates a private container. Pages do not read the blob anonymously; the API streams it.
+        private async Task<BlobContainerClient?> OpenContainerAsync()
+        {
+            string? connectionString = _configuration["AzureBlob:ConnectionString"];
+            if (string.IsNullOrWhiteSpace(connectionString))
+            {
+                return null;
+            }
+
+            string containerName = _configuration["AzureBlob:ContainerName"] ?? "raceday-images";
+            if (string.IsNullOrWhiteSpace(containerName))
+            {
+                containerName = "raceday-images";
+            }
+
+            var container = new BlobServiceClient(connectionString).GetBlobContainerClient(containerName);
+            await container.CreateIfNotExistsAsync(PublicAccessType.None);
+            try
+            {
+                await container.SetAccessPolicyAsync(PublicAccessType.None);
+            }
+            catch (Exception)
+            {
+                // A locked-down account may refuse the access change. The key can still read the blob.
+            }
+
+            return container;
         }
     }
 }

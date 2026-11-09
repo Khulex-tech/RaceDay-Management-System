@@ -70,6 +70,19 @@ namespace RaceDay.Web.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        [HttpGet]
+        [ActionName("Picture")]
+        public async Task<IActionResult> PictureFile()
+        {
+            var file = await Api.GetProfilePictureAsync();
+            if (!file.Success || file.Data == null || file.Data.Bytes.Length == 0)
+            {
+                return NotFound();
+            }
+
+            return File(file.Data.Bytes, file.Data.ContentType);
+        }
+
         [HttpPost]
         public async Task<IActionResult> Picture(IFormFile? file)
         {

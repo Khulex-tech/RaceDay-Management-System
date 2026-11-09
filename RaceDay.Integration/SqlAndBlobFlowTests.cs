@@ -81,6 +81,14 @@ namespace RaceDay.Integration
             var downloaded = await container.GetBlobClient(blobName).DownloadContentAsync();
             Assert.True(downloaded.Value.Content.ToMemory().Length > 0);
 
+            using var anonymous = new HttpClient();
+            var publicBlob = await anonymous.GetAsync(url);
+            Assert.False(publicBlob.IsSuccessStatusCode, "A private container must not serve the banner anonymously.");
+
+            var streamed = await thabo.GetAsync("/api/events/3/banner");
+            Assert.Equal(HttpStatusCode.OK, streamed.StatusCode);
+            Assert.True((await streamed.Content.ReadAsByteArrayAsync()).Length > 0);
+
             var handler = new NonDisposingHandler(api.Server.CreateHandler());
             await using var web = new WebApplicationFactory<WebEntryPoint>().WithWebHostBuilder(builder =>
             {
@@ -109,7 +117,8 @@ namespace RaceDay.Integration
 
             string myResults = await browser.GetStringAsync("/MyResults");
             Assert.Contains("Soweto Marathon", myResults);
-            Assert.Contains("47th", myResults);
+            Assert.Contains("47th recorded. 3 results on file.", myResults);
+            Assert.DoesNotContain("out of", myResults);
         }
 
         private static Task<HttpResponseMessage> Login(HttpClient client, string email)

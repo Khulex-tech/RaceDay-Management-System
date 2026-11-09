@@ -15,7 +15,8 @@
 </div>
 @if (editing && !string.IsNullOrWhiteSpace(banner))
 {
-    <img class="detail-banner" src="@banner" alt="Current event banner" style="margin-bottom:1rem;" />
+    <img class="detail-banner" src="/Events/Banner/@eventId" alt="Current event banner" style="margin-bottom:1rem;" onerror="this.onerror=null;this.hidden=true;if(this.nextElementSibling){this.nextElementSibling.hidden=false;}" />
+    <div class="banner-fallback" hidden style="margin-bottom:1rem;">Banner unavailable</div>
 }
 <form method="post" action="@action" class="form-card">
     <div asp-validation-summary="ModelOnly" class="banner banner-error" role="alert"></div>

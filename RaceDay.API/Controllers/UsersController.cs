@@ -153,6 +153,33 @@ namespace RaceDay.API.Controllers
             return Ok(new { profilePictureUrl = user.ProfilePictureUrl });
         }
 
+        // Streams the logged-in user's picture. The blob itself stays private.
+        [HttpGet("profile/picture")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetProfilePicture()
+        {
+            if (CurrentUserId == null)
+            {
+                return NotLoggedIn();
+            }
+
+            var user = await _db.Users.FindAsync(CurrentUserId);
+            if (user == null || string.IsNullOrWhiteSpace(user.ProfilePictureUrl))
+            {
+                return NotFound();
+            }
+
+            ImageContent? image = await _images.OpenAsync(user.ProfilePictureUrl);
+            if (image == null)
+            {
+                return NotFound();
+            }
+
+            return File(image.Content, image.ContentType);
+        }
+
         /// <summary>
         /// Returns limited public view of a user (Organisers only).
         /// </summary>

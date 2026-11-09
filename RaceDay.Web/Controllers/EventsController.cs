@@ -30,6 +30,19 @@ namespace RaceDay.Web.Controllers
             return View(ev.Data);
         }
 
+        // Same-origin image. The API reads the private blob; the browser never calls Azure.
+        [HttpGet]
+        public async Task<IActionResult> Banner(int id)
+        {
+            var file = await Api.GetEventBannerAsync(id);
+            if (!file.Success || file.Data == null || file.Data.Bytes.Length == 0)
+            {
+                return NotFound();
+            }
+
+            return File(file.Data.Bytes, file.Data.ContentType);
+        }
+
         [HttpPost]
         [RequireRole("Participant")]
         public async Task<IActionResult> Enter(EnterEventForm form)
