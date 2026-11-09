@@ -12,13 +12,14 @@
 </div>
 <section class="panel" style="margin-bottom:1rem;">
     <div class="profile-row">
-        @if (!string.IsNullOrWhiteSpace(profile?.ProfilePictureUrl))
+        @if (string.IsNullOrWhiteSpace(profile?.ProfilePictureUrl))
         {
-            <img class="avatar" src="@profile.ProfilePictureUrl" alt="Profile picture of @profile.FirstName @profile.LastName" />
+            <div class="avatar-fallback" aria-hidden="true">@initials</div>
         }
         else
         {
-            <div class="avatar-fallback" aria-hidden="true">@initials</div>
+            <img class="avatar" src="/Profile/Picture" alt="Profile picture of @profile.FirstName @profile.LastName" onerror="this.onerror=null;this.hidden=true;if(this.nextElementSibling){this.nextElementSibling.hidden=false;}" />
+            <div class="avatar-fallback" aria-hidden="true" hidden>@initials</div>
         }
         <form method="post" action="/Profile/Picture" enctype="multipart/form-data">
             @Html.AntiForgeryToken()

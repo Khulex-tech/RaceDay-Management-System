@@ -322,5 +322,71 @@ namespace RaceDay.Tests.Controllers
             Assert.IsType<OkObjectResult>(result);
             Assert.Equal("https://storage.example/raceday-images/start.png", db.Events.Single(e => e.EventId == ev.EventId).BannerImageUrl);
         }
+
+        [Fact]
+        public async Task GetBannerFile_StreamsThePrivateBlob()
+        {
+            var db = TestDbContextFactory.CreateDbContext(nameof(GetBannerFile_StreamsThePrivateBlob));
+            var ev = new Event
+            {
+                OrganiserId = 1,
+                EventTypeId = 1,
+                Name = "Banner Event",
+                Description = "Has a private banner",
+                EventDate = DateTime.Now.AddDays(10),
+                Location = "Durban",
+                DistanceKm = 10m,
+                BannerImageUrl = "https://storage.example/raceday-images/private.png"
+            };
+            db.Events.Add(ev);
+            await db.SaveChangesAsync();
+
+            var controller = new EventsController(db, new ReadableImageStore()).WithSession();
+            var result = await controller.GetBannerFile(ev.EventId);
+
+            var file = Assert.IsType<FileStreamResult>(result);
+            Assert.Equal("image/png", file.ContentType);
+        }
+
+        [Fact]
+        public async Task GetBannerFile_WhenTheBlobIsMissing_Returns404()
+        {
+            var db = TestDbContextFactory.CreateDbContext(nameof(GetBannerFile_WhenTheBlobIsMissing_Returns404));
+            var ev = new Event
+            {
+                OrganiserId = 1,
+                EventTypeId = 1,
+                Name = "Missing Banner",
+                Description = "URL saved but the file is gone",
+                EventDate = DateTime.Now.AddDays(10),
+                Location = "Durban",
+                DistanceKm = 10m,
+                BannerImageUrl = "https://storage.example/raceday-images/missing.png"
+            };
+            db.Events.Add(ev);
+            await db.SaveChangesAsync();
+
+            var controller = new EventsController(db, new FakeImageStore()).WithSession();
+            var result = await controller.GetBannerFile(ev.EventId);
+
+            Assert.IsType<NotFoundResult>(result);
+        }
+
+        private sealed class ReadableImageStore : IImageStore
+        {
+            public Task<ImageSaveResult> SaveAsync(IFormFile file)
+            {
+                return Task.FromResult(ImageSaveResult.Saved("https://storage.example/raceday-images/private.png"));
+            }
+
+            public Task<ImageContent?> OpenAsync(string storedUrl)
+            {
+                return Task.FromResult<ImageContent?>(new ImageContent
+                {
+                    Content = new MemoryStream(new byte[] { 9, 8, 7 }),
+                    ContentType = "image/png"
+                });
+            }
+        }
     }
 }

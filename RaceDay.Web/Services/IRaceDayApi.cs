@@ -19,6 +19,7 @@ namespace RaceDay.Web.Services
         Task<ApiResponse<SavedEvent>> UpdateEventAsync(int id, EventForm form);
         Task<ApiResponse<object>> DeleteEventAsync(int id);
         Task<ApiResponse<UploadResult>> UploadBannerAsync(int id, IFormFile file);
+        Task<ApiResponse<ImageFile>> GetEventBannerAsync(int id);
         Task<ApiResponse<List<OrganiserEventItem>>> GetOrganiserEventsAsync();
         Task<ApiResponse<OrganiserDashboard>> GetDashboardAsync();
 
@@ -43,5 +44,6 @@ namespace RaceDay.Web.Services
         Task<ApiResponse<UserProfile>> UpdateProfileAsync(ProfileForm form);
         Task<ApiResponse<object>> ChangePasswordAsync(PasswordForm form);
         Task<ApiResponse<UploadResult>> UploadProfilePictureAsync(IFormFile file);
+        Task<ApiResponse<ImageFile>> GetProfilePictureAsync();
     }
 }

@@ -192,6 +192,7 @@ namespace RaceDay.Web.Tests
             public Task<ApiResponse<SavedEvent>> UpdateEventAsync(int id, EventForm form) => Task.FromResult(ApiResponse<SavedEvent>.Ok(200, new SavedEvent { EventId = id }));
             public Task<ApiResponse<object>> DeleteEventAsync(int id) => Task.FromResult(ApiResponse<object>.Ok(204, null));
             public Task<ApiResponse<UploadResult>> UploadBannerAsync(int id, IFormFile file) => Task.FromResult(ApiResponse<UploadResult>.Ok(200, new UploadResult()));
+            public Task<ApiResponse<ImageFile>> GetEventBannerAsync(int id) => Task.FromResult(ApiResponse<ImageFile>.Fail(404, "No banner."));
             public Task<ApiResponse<List<OrganiserEventItem>>> GetOrganiserEventsAsync() => Task.FromResult(ApiResponse<List<OrganiserEventItem>>.Ok(200, new List<OrganiserEventItem>()));
             public Task<ApiResponse<List<CategoryItem>>> GetCategoriesAsync(int eventId) => Task.FromResult(ApiResponse<List<CategoryItem>>.Ok(200, new List<CategoryItem>()));
             public Task<ApiResponse<CategoryItem>> CreateCategoryAsync(int eventId, CategoryForm form) => Task.FromResult(ApiResponse<CategoryItem>.Ok(201, new CategoryItem()));
@@ -211,6 +212,7 @@ namespace RaceDay.Web.Tests
             public Task<ApiResponse<UserProfile>> UpdateProfileAsync(ProfileForm form) => Task.FromResult(ApiResponse<UserProfile>.Ok(200, new UserProfile()));
             public Task<ApiResponse<object>> ChangePasswordAsync(PasswordForm form) => Task.FromResult(ApiResponse<object>.Ok(200, null));
             public Task<ApiResponse<UploadResult>> UploadProfilePictureAsync(IFormFile file) => Task.FromResult(ApiResponse<UploadResult>.Ok(200, new UploadResult()));
+            public Task<ApiResponse<ImageFile>> GetProfilePictureAsync() => Task.FromResult(ApiResponse<ImageFile>.Fail(404, "No picture."));
         }
     }
 }

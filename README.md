@@ -325,7 +325,7 @@ Participant pages:
 - Home with search, type and date filters
 - Event detail, route options, current weather, and category entry
 - My Events, with status colours, category change and withdrawal
-- My Results, with finish time and position (for example 47th out of 3 finishers)
+- My Results, with finish time and the recorded place (for example `47th recorded. 3 results on file.`). The 3 is how many results have been saved, not a field of 3.
 - Profile, including the picture upload
 
 Seeded logins use the password `RaceDay@2026`. The SQL script stores the same PBKDF2 hashes as the EF Core seed:
@@ -354,17 +354,16 @@ The API development settings point at the public Azurite emulator account (`devs
 
 ## 12. Azure Blob Storage
 
-Banners and profile pictures go from the browser to MVC, then MVC posts the file to the API. The API uses `Azure.Storage.Blobs` and saves the blob URL on the event or user. The MVC project never talks to Azure itself.
+Banners and profile pictures go from the browser to MVC, then MVC posts the file to the API. The API uses `Azure.Storage.Blobs`, keeps the container private, and saves the blob URL on the event or user. Pages do not use that URL as the image address. The API streams the file with the storage account key, and MVC shows `/Events/Banner/{id}` or `/Profile/Picture`. If the file is missing, the page shows the local event-type or initials fallback instead of a broken image. A public anonymous-read container is not required.
 
-Local check: Azurite, then upload a JPG or PNG. The URL is stored and the image is shown on the event or profile page.
+Local check: Azurite, then upload a JPG or PNG. The blob URL is stored, and the picture is loaded through the API.
 
 Live Azure is separate. This repository was not given a storage account, and none was created. To point the API at a real account, set these values outside source control:
 
 - `AzureBlob__ConnectionString` — the storage account connection string
 - `AzureBlob__ContainerName` — `raceday-images` is the name the code uses
-- `AzureBlob__PublicBaseUrl` — leave empty for a normal Azure URL
 
-The storage account must allow the container to be read anonymously if the pages are going to show the image from the blob URL. Do not paste the connection string into chat or into `appsettings.json`.
+Leave the container private. Do not paste the connection string into chat or into `appsettings.json`.
 
 Azurite passing a test does not mean a live Azure account was used.
 

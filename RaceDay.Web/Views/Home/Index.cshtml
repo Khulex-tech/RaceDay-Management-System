@@ -66,13 +66,14 @@ else
         @foreach (var item in Model.Items)
         {
             <article class="event-card">
-                @if (!string.IsNullOrWhiteSpace(item.BannerImageUrl))
+                @if (string.IsNullOrWhiteSpace(item.BannerImageUrl))
                 {
-                    <img src="@item.BannerImageUrl" alt="Banner for @item.Name" />
+                    <div class="banner-fallback">@item.EventType</div>
                 }
                 else
                 {
-                    <div class="banner-fallback">@item.EventType</div>
+                    <img src="/Events/Banner/@item.EventId" alt="Banner for @item.Name" onerror="this.onerror=null;this.hidden=true;if(this.nextElementSibling){this.nextElementSibling.hidden=false;}" />
+                    <div class="banner-fallback" hidden>@item.EventType</div>
                 }
                 <div class="body">
                     <h2>@item.Name</h2>

@@ -11,5 +11,10 @@ namespace RaceDay.Tests.TestHelpers
             string name = string.IsNullOrWhiteSpace(file.FileName) ? "image.png" : file.FileName;
             return Task.FromResult(ImageSaveResult.Saved("https://storage.example/raceday-images/" + name));
         }
+
+        public Task<ImageContent?> OpenAsync(string storedUrl)
+        {
+            return Task.FromResult<ImageContent?>(null);
+        }
     }
 }

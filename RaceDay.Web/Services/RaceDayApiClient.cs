@@ -102,6 +102,11 @@ namespace RaceDay.Web.Services
             return SendFileAsync($"api/events/{id}/banner", file);
         }
 
+        public Task<ApiResponse<ImageFile>> GetEventBannerAsync(int id)
+        {
+            return GetFileAsync($"api/events/{id}/banner");
+        }
+
         public Task<ApiResponse<List<OrganiserEventItem>>> GetOrganiserEventsAsync()
         {
             return SendAsync<List<OrganiserEventItem>>(HttpMethod.Get, "api/events/my-events");
@@ -210,6 +215,11 @@ namespace RaceDay.Web.Services
             return SendFileAsync("api/users/profile/picture", file);
         }
 
+        public Task<ApiResponse<ImageFile>> GetProfilePictureAsync()
+        {
+            return GetFileAsync("api/users/profile/picture");
+        }
+
         private static object EventBody(EventForm form)
         {
             return new
@@ -282,6 +292,34 @@ namespace RaceDay.Web.Services
             catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
             {
                 return ApiResponse<UploadResult>.Fail(0, "The RaceDay service is unavailable. Please try again.");
+            }
+        }
+
+        private async Task<ApiResponse<ImageFile>> GetFileAsync(string url)
+        {
+            try
+            {
+                using var request = new HttpRequestMessage(HttpMethod.Get, url);
+                AttachCookie(request);
+                using var response = await _http.SendAsync(request);
+                StoreCookie(response);
+                if (!response.IsSuccessStatusCode)
+                {
+                    string text = await response.Content.ReadAsStringAsync();
+                    return ApiResponse<ImageFile>.Fail((int)response.StatusCode, ReadError(text));
+                }
+
+                byte[] bytes = await response.Content.ReadAsByteArrayAsync();
+                string contentType = response.Content.Headers.ContentType?.MediaType ?? "application/octet-stream";
+                return ApiResponse<ImageFile>.Ok((int)response.StatusCode, new ImageFile
+                {
+                    Bytes = bytes,
+                    ContentType = contentType
+                });
+            }
+            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+            {
+                return ApiResponse<ImageFile>.Fail(0, "The RaceDay service is unavailable. Please try again.");
             }
         }
 

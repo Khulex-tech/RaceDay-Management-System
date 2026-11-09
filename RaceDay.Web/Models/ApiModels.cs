@@ -163,6 +163,12 @@ namespace RaceDay.Web.Models
         public string Role { get; set; } = string.Empty;
     }
 
+    public class ImageFile
+    {
+        public byte[] Bytes { get; set; } = Array.Empty<byte>();
+        public string ContentType { get; set; } = "application/octet-stream";
+    }
+
     public class UploadResult
     {
         public int EventId { get; set; }
