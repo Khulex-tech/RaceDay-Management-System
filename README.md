@@ -328,7 +328,7 @@ Participant pages:
 - My Results, with finish time and position (for example 47th out of 3 finishers)
 - Profile, including the picture upload
 
-Seeded logins use the password `RaceDay@2026`:
+Seeded logins use the password `RaceDay@2026`. The SQL script stores the same PBKDF2 hashes as the EF Core seed:
 
 | Email | Role |
 | --- | --- |
