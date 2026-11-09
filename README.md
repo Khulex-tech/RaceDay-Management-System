@@ -1,7 +1,7 @@
 # RaceDay - Event Management System for South African Road Events
 
 **Module:** PROG6212 - Programming 2B  
-**Portfolio of Evidence - Part 2: RESTful API Development**  
+**Portfolio of Evidence - Parts 1, 2 and 3**  
 **Repository:** RaceDay-Management-System
 
 ---
@@ -9,6 +9,8 @@
 ## 1. Project Overview
 
 RaceDay is a web-based event management platform for South African road running, walking and cycling events.
+
+Part 1 is the plan (ERD, endpoint table and SQL script). Part 2 is the ASP.NET Core Web API and its tests. Part 3 is the MVC site that calls that API, Azure Blob Storage for images, and Docker.
 
 Part 2 delivers the full RESTful API built with ASP.NET Core Web API and Entity Framework Core, implementing all 40 endpoints planned in `docs/API_EndpointPlan.md`.
 
@@ -44,13 +46,18 @@ Both roles are stored in one `Users` table using a `Role` column (`Organiser` or
 .
 ├── .github/
 │   └── workflows/
-│       ├── ci.yml                    Part 2 CI workflow (Restores, builds, and runs xUnit tests)
+│       ├── ci.yml                    Build, unit tests, SQL Server, Azurite and Docker images
 │       └── part1.yml                 Part 1 static check workflow
 ├── docs/
 │   ├── RACEDAYERD.png                Section A — ERD (PNG)
 │   ├── API_EndpointPlan.md           Section B — API endpoint plan (Markdown)
 │   ├── RaceDay_DatabaseScript.sql    Section C — SQL Server schema + seed data
 │   └── SUCCESSFUL-CI.png             Screenshot of a successful CI run
+├── Dockerfile                        Part 3 MVC image
+├── docker-compose.yml                SQL Server, Azurite, API and MVC
+├── RaceDay.Web/                      ASP.NET Core MVC site (calls the API only)
+├── RaceDay.Web.Tests/                MVC session and navigation tests
+├── RaceDay.Integration/              SQL Server and Azurite flow test
 ├── RaceDay.API/                      ASP.NET Core Web API Project
 │   ├── Controllers/                  API Controllers (Auth, Users, Events, Categories, Enrolments, Results, Support)
 │   ├── Data/                         RaceDayDbContext & Data Seeder
@@ -58,7 +65,7 @@ Both roles are stored in one `Users` table using a `Role` column (`Organiser` or
 │   ├── Helpers/                      Password Hashing (PBKDF2), Image Uploads, & Role Constants
 │   ├── Models/                       EF Core Entity Models
 │   └── Program.cs                    Middleware, Session, and Swagger Configuration
-├── RaceDay.Tests/                    xUnit Unit Test Suite (41 Unit Tests)
+├── RaceDay.Tests/                    API unit tests, including blob URL and race-prep checks
 │   ├── Controllers/                  Unit tests for all controllers
 │   └── TestHelpers/                  In-Memory DbContext factory & TestSession mock
 ├── RaceDay.sln                       Visual Studio Solution file
@@ -273,7 +280,7 @@ Navigate to the root directory and start the API:
 ```bash
 dotnet run --project RaceDay.API
 ```
-The API will launch at `https://localhost:7043` or `http://localhost:5248`.
+The API will launch at `http://localhost:5043` with the `http` profile, or `https://localhost:7043` with the `https` profile.
 
 Public registration creates Participant accounts only. To create a trusted Organiser account, provide the invite code through configuration before starting the API. Do not commit the code to `appsettings.json`:
 
@@ -300,8 +307,98 @@ dotnet test
 
 ---
 
-## 10. Author
+## 11. Part 3 MVC site
+
+`RaceDay.Web` is an ASP.NET Core MVC app. It does not use Entity Framework and it does not open SQL Server. Every page calls `RaceDay.API` through `RaceDayApiClient`.
+
+The MVC session stores `UserId`, `Role`, the display name, and the API cookie `RaceDay.Session`. The shared `HttpClient` does not keep a cookie jar, so two people using the site at the same time cannot pick up each other's API login. Logging out calls the API and then clears the MVC session. Pages that need a login redirect to `/Account/Login`. Organiser pages reject a participant, and the menu changes with the role.
+
+Organiser pages:
+
+- Dashboard at `/organiser` (event count, enrolment count, upcoming dates)
+- Create, edit and delete events
+- Categories, enrolments and results for each event
+- Banner upload on the edit page
+
+Participant pages:
+
+- Home with search, type and date filters
+- Event detail, route options, current weather, and category entry
+- My Events, with status colours, category change and withdrawal
+- My Results, with finish time and position (for example 47th out of 3 finishers)
+- Profile, including the picture upload
+
+Seeded logins use the password `RaceDay@2026`:
+
+| Email | Role |
+| --- | --- |
+| thabo.mokoena@raceday.co.za | Organiser |
+| ayesha.patel@raceday.co.za | Organiser |
+| sipho.ndlovu@gmail.com | Participant |
+
+Public registration creates a participant. Organiser registration asks for the invite code and sends it to the API in the `X-Organiser-Invite-Code` header. Set that code on the API with `Authentication__OrganiserInviteCode`. Do not put a live code in `appsettings.json`. The compose file uses `raceday-organiser` only for the local demo.
+
+### Run the API and MVC on this machine
+
+1. Start SQL Server and create `RaceDayDb`. Either run `docs/RaceDay_DatabaseScript.sql`, or set `Database__ApplyMigrations=true` so EF Core applies `RaceDay.API/Migrations` and the seed data.
+2. Start Azurite if you want image uploads locally: `npx azurite --silent --location ./azurite --blobPort 10000`
+3. Start the API: `dotnet run --project RaceDay.API --launch-profile http`
+4. Start the site: `dotnet run --project RaceDay.Web --launch-profile http`
+5. Open `http://localhost:5080`
+
+The API development settings point at the public Azurite emulator account (`devstoreaccount1` on `127.0.0.1:10000`). That account key is the emulator key published by Microsoft. It is not a connection string for a live Azure Storage account.
+
+### Weather and route
+
+`GET /api/events/{id}/race-prep` builds the route summary from the event location, distance, type and categories. Weather is the current Open-Meteo reading for a known South African start, or a geocoded place when the town is not in the local list. If the forecast cannot be loaded, the event page still opens and says the weather is unavailable.
+
+## 12. Azure Blob Storage
+
+Banners and profile pictures go from the browser to MVC, then MVC posts the file to the API. The API uses `Azure.Storage.Blobs` and saves the blob URL on the event or user. The MVC project never talks to Azure itself.
+
+Local check: Azurite, then upload a JPG or PNG. The URL is stored and the image is shown on the event or profile page.
+
+Live Azure is separate. This repository was not given a storage account, and none was created. To point the API at a real account, set these values outside source control:
+
+- `AzureBlob__ConnectionString` — the storage account connection string
+- `AzureBlob__ContainerName` — `raceday-images` is the name the code uses
+- `AzureBlob__PublicBaseUrl` — leave empty for a normal Azure URL
+
+The storage account must allow the container to be read anonymously if the pages are going to show the image from the blob URL. Do not paste the connection string into chat or into `appsettings.json`.
+
+Azurite passing a test does not mean a live Azure account was used.
+
+## 13. Docker
+
+```bash
+docker compose up --build
+```
+
+Then open `http://localhost:8080`. The API is on `http://localhost:8081` and Swagger is at `http://localhost:8081/swagger` while the compose environment is Development. SQL Server is published on port 1433 with the compose-only password `RaceDay_Dev_2026!`. Azurite blob storage is on port 10000.
+
+`docker compose up --build` is the single command. The same images can be built on their own:
+
+```bash
+docker build -f Dockerfile .
+docker build -f RaceDay.API/Dockerfile .
+```
+
+## 14. Tests and CI
+
+```bash
+dotnet test
+```
+
+That builds the API, the MVC site, the unit tests and the MVC navigation tests. `RaceDay.Integration` talks to SQL Server and Azurite only when both connection variables are set. Set `RACEDAY_REQUIRE_SQL=true` as well when that check must not be skipped. GitHub Actions (`.github/workflows/ci.yml`) starts SQL Server 2022 and Azurite, sets those variables, runs `dotnet test`, and builds both Dockerfiles.
+
+The screenshot in section 8 is the Part 1 workflow. A Part 3 screenshot belongs here only after a real green run of `.github/workflows/ci.yml` is captured. There is no substitute image.
+
+## 15. Video
+
+Part 3 still needs an unlisted YouTube video recorded by the student, with the student's own voice, showing the running MVC site, the blob upload and Docker. No video was recorded for this commit, and this README does not contain a placeholder link.
+
+## 16. Author
 
 **Name:** Thapelo Mkhari (Khulex-tech)  
 **Module:** PROG6212 - Programming 2B  
-**Part:** 2 of 3 - RESTful API Development
+**Part:** 3 of 3 - MVC, Blob Storage and Docker
