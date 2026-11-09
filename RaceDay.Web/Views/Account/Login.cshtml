@@ -1,0 +1,31 @@
+@model LoginForm
+@{
+    ViewData["Title"] = "Log in";
+}
+<div class="page-head">
+    <div>
+        <h1>Log in</h1>
+        <p class="muted">Your role is stored on the server after a successful login.</p>
+    </div>
+</div>
+<form method="post" class="form-card" style="max-width:520px;">
+    <div asp-validation-summary="ModelOnly" class="banner banner-error" role="alert"></div>
+    <input type="hidden" asp-for="ReturnUrl" />
+    <div>
+        <label asp-for="Email"></label>
+        <input asp-for="Email" autocomplete="username" />
+        <span asp-validation-for="Email" class="field-error"></span>
+    </div>
+    <div style="margin-top:0.8rem;">
+        <label asp-for="Password"></label>
+        <input asp-for="Password" autocomplete="current-password" />
+        <span asp-validation-for="Password" class="field-error"></span>
+    </div>
+    <div class="actions" style="margin-top:1rem;">
+        <button class="btn" type="submit">Log in</button>
+        <a href="/Account/Register">Create an account</a>
+    </div>
+</form>
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

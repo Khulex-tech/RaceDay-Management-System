@@ -172,6 +172,8 @@ a { color: var(--forest); }
 
 label { display: block; font-weight: 600; margin-bottom: 0.25rem; }
 
+input[type="checkbox"], input[type="radio"] { width: auto; }
+
 input, select, textarea {
   width: 100%;
   border: 1px solid #cfc6b8;
