@@ -22,7 +22,7 @@
 
 ## Table of Contents
 
-1. [Overview](#1-overview)
+1. [Project Overview](#1-project-overview)
 2. [System Roles](#2-system-roles)
 3. [Repository Structure](#3-repository-structure)
 4. [Part 1 - Planning](#4-part-1---planning)
@@ -35,7 +35,7 @@
 
 ---
 
-## 1. Overview
+## 1. Project Overview
 
 RaceDay is a web-based event management platform for South African road running, walking and cycling events.
 
