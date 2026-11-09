@@ -16,11 +16,13 @@ namespace RaceDay.API.Controllers
     {
         private readonly RaceDayDbContext _db;
         private readonly IWebHostEnvironment _env;
+        private readonly IWeatherClient _weather;
 
-        public EventsController(RaceDayDbContext db, IWebHostEnvironment env)
+        public EventsController(RaceDayDbContext db, IWebHostEnvironment env, IWeatherClient? weather = null)
         {
             _db = db;
             _env = env;
+            _weather = weather ?? new OpenMeteoWeatherClient(new HttpClient { Timeout = TimeSpan.FromSeconds(8) });
         }
 
         /// <summary>
@@ -438,6 +440,59 @@ namespace RaceDay.API.Controllers
             await _db.SaveChangesAsync();
 
             return Ok(new { eventId = ev.EventId, bannerImageUrl = ev.BannerImageUrl });
+        }
+
+        // Route options come from the event and its categories. Weather is the current Open-Meteo reading.
+        [HttpGet("events/{id:int}/race-prep")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetRacePrep(int id)
+        {
+            var ev = await _db.Events
+                .Include(e => e.EventType)
+                .Include(e => e.Categories)
+                .FirstOrDefaultAsync(e => e.EventId == id);
+
+            if (ev == null)
+            {
+                return NotFound(new { message = "Event not found." });
+            }
+
+            string eventTypeName = ev.EventType?.Name ?? "Event";
+            var route = new
+            {
+                startLocation = ev.Location,
+                distanceKm = ev.DistanceKm,
+                eventType = eventTypeName,
+                summary = $"{eventTypeName} covering {ev.DistanceKm:0.##} km, starting at {ev.Location}.",
+                options = ev.Categories
+                    .OrderBy(c => c.Name)
+                    .Select(c => new { name = c.Name, description = c.Description })
+            };
+
+            object weather;
+            try
+            {
+                WeatherSnapshot? report = await _weather.GetCurrentAsync(ev.Location, HttpContext.RequestAborted);
+                weather = report == null
+                    ? new { available = false, message = "Live weather could not be loaded for this start location." }
+                    : (object)new
+                    {
+                        available = true,
+                        locationName = report.LocationName,
+                        temperatureC = Math.Round(report.TemperatureC, 1),
+                        conditions = report.Conditions,
+                        windKmh = Math.Round(report.WindKmh, 1),
+                        source = "Open-Meteo",
+                        note = "Current conditions near the start. The forecast can change before race day."
+                    };
+            }
+            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+            {
+                weather = new { available = false, message = "Live weather could not be loaded right now." };
+            }
+
+            return Ok(new { eventId = ev.EventId, route, weather });
         }
 
         /// <summary>

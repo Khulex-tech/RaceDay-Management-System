@@ -1,6 +1,7 @@
 using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using RaceDay.API.Data;
+using RaceDay.API.Helpers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -33,6 +34,11 @@ builder.Services.AddDbContext<RaceDayDbContext>(options =>
  * After login the API stores UserId and Role in the session and the client
  * only receives the session cookie.
  */
+builder.Services.AddHttpClient<IWeatherClient, OpenMeteoWeatherClient>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(8);
+});
+
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(options =>
 {
@@ -50,7 +56,11 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+// Docker serves HTTP only. Local HTTPS profiles keep the redirect.
+if (app.Configuration.GetValue("UseHttpsRedirection", true))
+{
+    app.UseHttpsRedirection();
+}
 
 // Serves uploaded images from wwwroot/uploads
 app.UseStaticFiles();
